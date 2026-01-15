@@ -8,6 +8,7 @@
             searchQuery: '',
             editingStudent: null,
             editForm: { name: '', number: '', classroom: '' },
+            selectedIds: [],
             async load() {
                 const token = localStorage.getItem('adminToken');
                 if (!token) { window.location.href = '/admin/login'; return; }
@@ -24,6 +25,71 @@
                     s.number.toLowerCase().includes(q) ||
                     (s.classroom && s.classroom.toLowerCase().includes(q))
                 );
+            },
+            toggleSelectAll() {
+                if (this.selectedIds.length === this.filteredStudents.length) {
+                    this.selectedIds = [];
+                } else {
+                    this.selectedIds = this.filteredStudents.map(s => s.id);
+                }
+            },
+            toggleSelect(id) {
+                const idx = this.selectedIds.indexOf(id);
+                if (idx > -1) this.selectedIds.splice(idx, 1);
+                else this.selectedIds.push(id);
+            },
+            async bulkDelete() {
+                const result = await Swal.fire({
+                    title: 'ยืนยันการลบหลายรายการ?',
+                    text: `คุณต้องการลบนักเรียนที่เลือกทั้งหมด ${this.selectedIds.length} คนหรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบทั้งหมด',
+                    cancelButtonColor: '#e11d48'
+                });
+                if (!result.isConfirmed) return;
+
+                const token = localStorage.getItem('adminToken');
+                try {
+                    await axios.post('/admin/api/students/bulk-delete', { ids: this.selectedIds }, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.students = this.students.filter(s => !this.selectedIds.includes(s.id));
+                    this.selectedIds = [];
+                    Toastify({ text: 'ลบข้อมูลสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error');
+                }
+            },
+            async bulkUpdateClass() {
+                const { value: classroom } = await Swal.fire({
+                    title: 'แก้ไขห้องเรียนให้นักเรียนที่เลือก',
+                    input: 'text',
+                    inputLabel: 'ระบุห้องเรียนใหม่ (เช่น ม.3/1)',
+                    inputPlaceholder: 'พิมพ์ห้องเรียน...',
+                    showCancelButton: true,
+                    confirmButtonText: 'อัปเดต',
+                });
+
+                if (classroom === undefined) return;
+
+                const token = localStorage.getItem('adminToken');
+                try {
+                    await axios.post('/admin/api/students/bulk-update-class', {
+                        ids: this.selectedIds,
+                        classroom: classroom
+                    }, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+
+                    this.students.forEach(s => {
+                        if (this.selectedIds.includes(s.id)) s.classroom = classroom;
+                    });
+                    this.selectedIds = [];
+                    Toastify({ text: 'อัปเดตห้องเรียนสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถอัปเดตข้อมูลได้', 'error');
+                }
             },
             editStudent(student) {
                 this.editingStudent = { ...student };
@@ -102,10 +168,16 @@
         </div>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+    <div
+        class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden relative">
         <table class="w-full text-sm text-left">
             <thead class="bg-slate-50 dark:bg-slate-800 text-xs font-medium uppercase text-slate-500">
                 <tr>
+                    <th class="px-4 py-3 w-10">
+                        <input type="checkbox" @change="toggleSelectAll"
+                            :checked="selectedIds.length === filteredStudents.length && filteredStudents.length > 0"
+                            class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                    </th>
                     <th class="px-4 py-3">รหัสนักเรียน</th>
                     <th class="px-4 py-3">ชื่อ-นามสกุล</th>
                     <th class="px-4 py-3">ห้อง</th>
@@ -114,7 +186,13 @@
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                 <template x-for="student in filteredStudents" :key="student.id">
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                        :class="selectedIds.includes(student.id) ? 'bg-rose-50/50 dark:bg-rose-900/10' : ''">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" :checked="selectedIds.includes(student.id)"
+                                @change="toggleSelect(student.id)"
+                                class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                        </td>
                         <td class="px-4 py-3 font-mono text-xs" x-text="student.number"></td>
                         <td class="px-4 py-3 font-medium" x-text="student.name"></td>
                         <td class="px-4 py-3 text-slate-500" x-text="student.classroom || '-'"></td>
@@ -139,12 +217,46 @@
                     </tr>
                 </template>
                 <tr x-show="filteredStudents.length === 0">
-                    <td colspan="4" class="px-4 py-8 text-center text-slate-400">
+                    <td colspan="5" class="px-4 py-8 text-center text-slate-400">
                         ไม่พบข้อมูลนักเรียน
                     </td>
                 </tr>
             </tbody>
         </table>
+
+        <!-- Floating Bulk Action Bar -->
+        <div x-show="selectedIds.length > 0" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
+            class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+            <div
+                class="bg-slate-900 dark:bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 border border-white/10">
+                <div class="text-sm font-medium border-l border-white/20 pl-4 h-6 flex items-center">
+                    เลือกอยู่ <span class="mx-1 text-rose-400 font-bold" x-text="selectedIds.length"></span> คน
+                </div>
+                <div class="flex gap-2">
+                    <button @click="bulkUpdateClass"
+                        class="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-medium transition flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        ย้ายห้องเรียน
+                    </button>
+                    <button @click="bulkDelete"
+                        class="px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-xs font-medium transition flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        ลบที่เลือก
+                    </button>
+                    <button @click="selectedIds = []"
+                        class="text-xs text-slate-400 hover:text-white px-2 transition">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Edit Modal -->

@@ -298,3 +298,30 @@ def delete_student(
     db.delete(student)
     db.commit()
     return
+
+
+@router.post("/api/students/bulk-delete", response_model=schemas.MessageResponse)
+def bulk_delete_students(
+    payload: schemas.BulkActionIds,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    students = db.query(models.Student).filter(models.Student.id.in_(payload.ids)).all()
+    count = len(students)
+    for student in students:
+        db.delete(student)
+    db.commit()
+    return schemas.MessageResponse(success=True, message=f"ลบข้อมูลนักเรียนสำเร็จ {count} รายการ")
+
+
+@router.post("/api/students/bulk-update-class", response_model=schemas.MessageResponse)
+def bulk_update_classroom(
+    payload: schemas.BulkUpdateClassroom,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    db.query(models.Student).filter(models.Student.id.in_(payload.ids)).update(
+        {models.Student.classroom: payload.classroom}, synchronize_session=False
+    )
+    db.commit()
+    return schemas.MessageResponse(success=True, message=f"อัปเดตห้องเรียนสำเร็จ {len(payload.ids)} รายการ")

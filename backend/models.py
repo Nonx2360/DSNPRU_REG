@@ -13,7 +13,7 @@ class Student(Base):
     classroom = Column(String, index=True, nullable=True)  # 'class' reserved in Python
     number = Column(String, nullable=False)
 
-    registrations = relationship("Registration", back_populates="student")
+    registrations = relationship("Registration", back_populates="student", cascade="all, delete-orphan")
 
 
 class Activity(Base):
@@ -25,7 +25,7 @@ class Activity(Base):
     max_people = Column(Integer, nullable=False)
     status = Column(String, default="open")  # open / close
 
-    registrations = relationship("Registration", back_populates="activity")
+    registrations = relationship("Registration", back_populates="activity", cascade="all, delete-orphan")
 
 
 class Registration(Base):

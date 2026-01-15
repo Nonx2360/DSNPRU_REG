@@ -108,3 +108,12 @@ class DashboardStats(BaseModel):
     activities: List[Activity]
 
 
+class BulkActionIds(BaseModel):
+    ids: List[int]
+
+
+class BulkUpdateClassroom(BaseModel):
+    ids: List[int]
+    classroom: str
+
+
