@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}แดชบอร์ดผู้ดูแล - SIC Day{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('dashboardPage', () => ({
+            stats: null,
+            async load() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) {
+                    window.location.href = '/admin/login';
+                    return;
+                }
+                const res = await axios.get('/admin/api/dashboard', {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                this.stats = res.data;
+                this.$nextTick(() => {
+                    const ctx = document.getElementById('activityChart');
+                    if (ctx && window.Chart) {
+                        const labels = this.stats.activities.map(a => a.title);
+                        const counts = this.stats.activities.map(a => a.registered_count);
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels,
+                                datasets: [{
+                                    label: 'จำนวนผู้สมัคร',
+                                    data: counts,
+                                    backgroundColor: '#4f46e5'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: { legend: { display: false } }
+                            }
+                        });
+                    }
+                });
+            },
+            async importFile(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const token = localStorage.getItem('adminToken');
+                try {
+                    const res = await axios.post('/admin/api/import_students', formData, {
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+                    if (res.data.success) {
+                        Swal.fire('สำเร็จ!', res.data.message, 'success');
+                        this.load();
+                    } else {
+                        Swal.fire('เกิดข้อผิดพลาด', res.data.message, 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('เกิดข้อผิดพลาด', err.response?.data?.detail || 'ไม่สามารถนำเข้าข้อมูลได้', 'error');
+                }
+                e.target.value = ''; // Reset
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="dashboardPage()" x-init="load()">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h1 class="text-2xl font-semibold">แดชบอร์ดผู้ดูแลกิจกรรม</h1>
+            <p class="text-xs text-slate-500 mt-1">ภาพรวมจำนวนผู้สมัครต่อกิจกรรม</p>
+        </div>
+        <div class="flex gap-2 text-xs">
+            <input type="file" x-ref="fileInput" @change="importFile" class="hidden" accept=".xlsx,.xls">
+            <button @click="$refs.fileInput.click()"
+                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600">นำเข้ารายชื่อ
+                (Excel)</button>
+            <a href="/admin/students"
+                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600">จัดการรายชื่อ</a>
+            <a href="/admin/activities"
+                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600">จัดการกิจกรรม</a>
+            <a href="/admin/export" class="px-3 py-1.5 rounded-full bg-rose-600 text-white">ส่งออกข้อมูล</a>
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-6" x-show="stats">
+        <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+            <div class="text-xs text-slate-500 mb-1">จำนวนนักเรียนทั้งหมด</div>
+            <div class="text-2xl font-semibold" x-text="stats?.total_students ?? 0"></div>
+        </div>
+        <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+            <div class="text-xs text-slate-500 mb-1">จำนวนการลงทะเบียนทั้งหมด</div>
+            <div class="text-2xl font-semibold" x-text="stats?.total_registrations ?? 0"></div>
+        </div>
+        <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+            <div class="text-xs text-slate-500 mb-1">จำนวนกิจกรรม</div>
+            <div class="text-2xl font-semibold" x-text="stats?.activities?.length ?? 0"></div>
+        </div>
+    </div>
+
+    <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
+        <h2 class="text-sm font-semibold mb-2">กราฟจำนวนผู้สมัครต่อกิจกรรม</h2>
+        <canvas id="activityChart" class="w-full h-64"></canvas>
+    </div>
+</section>
+{% endblock %}

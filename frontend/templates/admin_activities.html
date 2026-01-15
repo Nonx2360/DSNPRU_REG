@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}จัดการกิจกรรม - SIC Day{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('adminActivitiesPage', () => ({
+            activities: [],
+            form: { title: '', description: '', max_people: 30, status: 'open' },
+            async load() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href = '/admin/login'; return; }
+                const res = await axios.get('/admin/api/activities', {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                this.activities = res.data;
+            },
+            async createActivity() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href = '/admin/login'; return; }
+                try {
+                    const res = await axios.post('/admin/create_activity', this.form, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.activities.push(res.data);
+                    this.form = { title: '', description: '', max_people: 30, status: 'open' };
+                    Toastify({ text: 'สร้างกิจกรรมสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างกิจกรรมได้', 'error');
+                }
+            },
+            async toggle(activity) {
+                const token = localStorage.getItem('adminToken');
+                const res = await axios.post(`/admin/activities/${activity.id}/toggle`, {}, {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                const idx = this.activities.findIndex(a => a.id === activity.id);
+                if (idx !== -1) this.activities[idx] = res.data;
+            },
+            async remove(activity) {
+                const token = localStorage.getItem('adminToken');
+                await axios.delete(`/admin/activities/${activity.id}`, {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                this.activities = this.activities.filter(a => a.id !== activity.id);
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="adminActivitiesPage()" x-init="load()">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-semibold">จัดการกิจกรรม</h1>
+        <a href="/admin/dashboard" class="text-xs text-rose-600 hover:underline">กลับแดชบอร์ด</a>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 mb-6">
+        <div
+            class="md:col-span-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+            <h2 class="text-sm font-semibold mb-1">สร้างกิจกรรมใหม่</h2>
+            <div>
+                <label class="block text-xs mb-1">ชื่อกิจกรรม</label>
+                <input type="text" x-model="form.title"
+                    class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
+            </div>
+            <div>
+                <label class="block text-xs mb-1">รายละเอียด</label>
+                <textarea x-model="form.description"
+                    class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5"></textarea>
+            </div>
+            <div class="flex gap-3">
+                <div class="flex-1">
+                    <label class="block text-xs mb-1">จำนวนรับสูงสุด</label>
+                    <input type="number" x-model.number="form.max_people" min="1"
+                        class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
+                </div>
+            </div>
+            <button type="button" @click="createActivity"
+                class="w-full mt-2 inline-flex justify-center items-center px-4 py-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium">
+                บันทึกกิจกรรม
+            </button>
+        </div>
+        <div class="md:col-span-2">
+            <div class="grid sm:grid-cols-2 gap-4">
+                <template x-for="activity in activities" :key="activity.id">
+                    <div
+                        class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-2">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="text-sm font-semibold" x-text="activity.title"></div>
+                                <div class="text-xs text-slate-500 mt-1" x-text="activity.description"></div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[11px]"
+                                :class="activity.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
+                                <span x-text="activity.status === 'open' ? 'เปิด' : 'ปิด'"></span>
+                            </span>
+                        </div>
+                        <div class="text-xs text-slate-600 dark:text-slate-300">
+                            ผู้สมัครแล้ว <span class="font-semibold" x-text="activity.registered_count"></span> /
+                            <span x-text="activity.max_people"></span> (เหลือ
+                            <span class="font-semibold" x-text="activity.remaining_seats"></span>)
+                        </div>
+                        <div class="flex gap-2 mt-1 text-xs">
+                            <button class="px-3 py-1 rounded-full border border-slate-300 dark:border-slate-600"
+                                @click="toggle(activity)">
+                                เปิด/ปิดรับสมัคร
+                            </button>
+                            <button class="px-3 py-1 rounded-full border border-rose-300 text-rose-600"
+                                @click="remove(activity)">
+                                ลบ
+                            </button>
+                            <a class="ml-auto px-3 py-1 rounded-full bg-slate-900 text-white"
+                                :href="`/admin/activity/${activity.id}`">
+                                รายชื่อ
+                            </a>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

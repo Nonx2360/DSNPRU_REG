@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}เข้าสู่ระบบผู้ดูแล - SIC Day{% endblock %}
+{% block content %}
+<section x-data="adminLoginPage()">
+    <div
+        class="max-w-md mx-auto mt-8 rounded-2xl bg-white dark:bg-slate-900 shadow-lg border border-slate-200/80 dark:border-slate-700 px-6 py-8">
+        <div class="flex justify-center mb-6">
+            <img src="/static/img/logo.png" alt="Logo" class="w-16 h-16 object-contain">
+        </div>
+        <h1 class="text-xl font-semibold mb-1 text-center">เข้าสู่ระบบผู้ดูแลกิจกรรม</h1>
+        <p class="text-xs text-slate-500 text-center mb-5">
+            สำหรับครูผู้รับผิดชอบกิจกรรม SIC Day เท่านั้น
+        </p>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-sm font-medium mb-1">ชื่อผู้ใช้</label>
+                <input type="text" x-model="username"
+                    class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-2"
+                    placeholder="admin">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">รหัสผ่าน</label>
+                <input type="password" x-model="password"
+                    class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-2"
+                    placeholder="••••••••">
+            </div>
+            <button type="button" @click="login"
+                class="w-full mt-2 inline-flex justify-center items-center px-4 py-2.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium shadow-sm">
+                เข้าสู่ระบบ
+            </button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-4 text-center">
+            ค่าเริ่มต้น: ชื่อผู้ใช้ <span class="font-medium">admin</span> / รหัสผ่าน <span
+                class="font-medium">admin123</span><br>
+            (ควรเปลี่ยนรหัสผ่านเมื่อใช้งานจริง)
+        </p>
+    </div>
+</section>
+{% endblock %}

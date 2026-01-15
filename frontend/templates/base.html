@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th" x-data="{ dark: localStorage.getItem('theme') === 'dark' }"
+    x-init="$watch('dark', v => localStorage.setItem('theme', v ? 'dark' : 'light'))" x-bind:class="dark ? 'dark' : ''">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SIC Day{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'ui-sans-serif', 'system-ui'],
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <!-- JS libraries - loaded locally -->
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/axios.min.js"></script>
+    <script src="/static/js/sweetalert2.min.js"></script>
+    <script src="/static/js/toastify.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/toastify.min.css">
+    <script src="/static/js/chart.min.js"></script>
+    <script src="/static/js/flatpickr.min.js"></script>
+    <link rel="stylesheet" href="/static/css/flatpickr.min.css">
+    <script src="/static/js/filesaver.min.js"></script>
+    <script src="/static/js/html2pdf.min.js"></script>
+    <script src="/static/js/sortable.min.js"></script>
+    <link rel="stylesheet" href="/static/css/datatables.min.css">
+    <script src="/static/js/datatables.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/alpine.min.js" defer></script>
+    {% block head_extra %}{% endblock %}
+</head>
+
+<body class="font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen">
+    <div id="spinner-overlay" class="hidden fixed inset-0 bg-slate-900/40 z-40 items-center justify-center"></div>
+    <header class="bg-rose-600 dark:bg-rose-700 text-white shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="/static/img/logo.png" alt="Logo" class="w-10 h-10 object-contain">
+                <div>
+                    <div class="font-semibold text-lg leading-tight">SIC Day</div>
+                    <div class="text-[11px] text-rose-100 opacity-90">ระบบลงทะเบียนกิจกรรมโรงเรียน</div>
+                </div>
+            </div>
+            <nav class="hidden sm:flex items-center gap-4 text-sm">
+                <a href="/" class="hover:underline">ลงทะเบียน</a>
+                <a href="/activities" class="hover:underline">ดูกิจกรรม</a>
+                <a href="/admin/login" class="hover:underline">สำหรับครู (Admin)</a>
+                <button type="button" class="ml-3 px-3 py-1.5 rounded-full bg-white/15 text-xs" @click="dark = !dark">
+                    <span x-show="!dark">โหมดมืด</span>
+                    <span x-show="dark">โหมดสว่าง</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-slate-200/60 dark:border-slate-700 mt-8">
+        <div
+            class="max-w-6xl mx-auto px-4 py-4 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>© ระบบลงทะเบียนกิจกรรม SIC Day</span>
+            <span>ออกแบบสำหรับการใช้งานในโรงเรียน ภาษาไทยทั้งระบบ</span>
+        </div>
+    </footer>
+</body>
+
+</html>

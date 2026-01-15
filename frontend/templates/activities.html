@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}ดูกิจกรรมทั้งหมด - SIC Day{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('activitiesPage', () => ({
+            activities: [],
+            async load() {
+                const res = await axios.get('/activities');
+                this.activities = res.data;
+                this.$nextTick(() => {
+                    const el = document.getElementById('sortable-activities');
+                    if (el && window.Sortable) {
+                        Sortable.create(el, { animation: 150 });
+                    }
+                });
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="activitiesPage()" x-init="load()">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-semibold">ดูกิจกรรมทั้งหมด</h1>
+        <a href="/" class="text-xs text-rose-600 hover:underline">กลับไปหน้าลงทะเบียน</a>
+    </div>
+    <div id="sortable-activities" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="activity in activities" :key="activity.id">
+            <div
+                class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-4 shadow-sm hover:shadow-md transition group">
+                <div class="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                        <div class="font-semibold text-sm" x-text="activity.title"></div>
+                        <div class="text-xs text-slate-500 mt-1 line-clamp-2" x-text="activity.description"></div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-medium"
+                        :class="activity.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
+                        <span x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-xs mt-2">
+                    <span class="text-slate-600 dark:text-slate-300">
+                        เหลือที่นั่ง
+                        <span class="font-semibold" x-text="activity.remaining_seats"></span>
+                        / <span x-text="activity.max_people"></span>
+                    </span>
+                </div>
+            </div>
+        </template>
+    </div>
+</section>
+{% endblock %}

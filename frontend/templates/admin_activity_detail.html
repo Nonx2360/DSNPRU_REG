@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}รายชื่อผู้สมัคร - SIC Day{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('activityDetailPage', () => ({
+            activityId: "{{ activity_id }}",
+            registrations: [],
+            async load() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href = '/admin/login'; return; }
+                const res = await axios.get(`/admin/registrations/${this.activityId}`, {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                this.registrations = res.data;
+                this.$nextTick(() => {
+                    if ($('#regTable').length) {
+                        $('#regTable').DataTable();
+                    }
+                });
+            },
+            async exportExcel() {
+                const token = localStorage.getItem('adminToken');
+                const url = `/export/excel?activity_id=${this.activityId}`;
+                const res = await axios.get(url, {
+                    headers: { Authorization: 'Bearer ' + token },
+                    responseType: 'blob'
+                });
+                saveAs(res.data, 'registrations.xlsx');
+            },
+            async exportPdf() {
+                const token = localStorage.getItem('adminToken');
+                const url = `/export/pdf?activity_id=${this.activityId}`;
+                const res = await axios.get(url, {
+                    headers: { Authorization: 'Bearer ' + token },
+                    responseType: 'blob'
+                });
+                saveAs(res.data, 'registrations.pdf');
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="activityDetailPage()" x-init="load()">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-semibold">รายชื่อผู้สมัครกิจกรรม</h1>
+        <a href="/admin/activities" class="text-xs text-rose-600 hover:underline">กลับหน้าจัดการกิจกรรม</a>
+    </div>
+
+    <div class="flex justify-end gap-2 mb-3 text-xs">
+        <button class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600" @click="exportExcel">
+            ส่งออก Excel
+        </button>
+        <button class="px-3 py-1.5 rounded-full bg-slate-900 text-white" @click="exportPdf">
+            ส่งออก PDF
+        </button>
+    </div>
+
+    <div
+        class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 overflow-x-auto">
+        <table id="regTable" class="display text-xs w-full">
+            <thead>
+                <tr>
+                    <th>ชื่อ–สกุล</th>
+                    <th>ห้อง</th>
+                    <th>เลขที่</th>
+                    <th>เวลา</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="r in registrations" :key="r.id">
+                    <tr>
+                        <td x-text="r.student.name"></td>
+                        <td x-text="r.student.classroom"></td>
+                        <td x-text="r.student.number"></td>
+                        <td x-text="new Date(r.timestamp).toLocaleString('th-TH')"></td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}ส่งออกข้อมูล - SIC Day{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('exportPage', () => ({
+            scope: 'all',
+            activityId: '',
+            async exportExcel() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href = '/admin/login'; return; }
+                const params = this.scope === 'activity' ? `?activity_id=${this.activityId}` : '';
+                const res = await axios.get(`/export/excel${params}`, {
+                    headers: { Authorization: 'Bearer ' + token },
+                    responseType: 'blob'
+                });
+                saveAs(res.data, 'registrations.xlsx');
+            },
+            async exportPdf() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href = '/admin/login'; return; }
+                const params = this.scope === 'activity' ? `?activity_id=${this.activityId}` : '';
+                const res = await axios.get(`/export/pdf${params}`, {
+                    headers: { Authorization: 'Bearer ' + token },
+                    responseType: 'blob'
+                });
+                saveAs(res.data, 'registrations.pdf');
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="exportPage()">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-semibold">ส่งออกข้อมูลผู้สมัคร</h1>
+        <a href="/admin/dashboard" class="text-xs text-rose-600 hover:underline">กลับแดชบอร์ด</a>
+    </div>
+
+    <div
+        class="max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+        <div>
+            <label class="block text-xs mb-1">ขอบเขตการส่งออก</label>
+            <select x-model="scope"
+                class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
+                <option value="all">ทุกกิจกรรม</option>
+                <option value="activity">ตามกิจกรรม (ระบุรหัสกิจกรรม)</option>
+            </select>
+        </div>
+        <div x-show="scope === 'activity'">
+            <label class="block text-xs mb-1">รหัสกิจกรรม</label>
+            <input type="number" x-model="activityId"
+                class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
+            <p class="text-[11px] text-slate-400 mt-1">ดูรหัสกิจกรรมได้จากหน้าจัดการกิจกรรม</p>
+        </div>
+        <div class="flex gap-2 mt-2 text-sm">
+            <button class="flex-1 px-3 py-2 rounded-full border border-slate-300 dark:border-slate-600"
+                @click="exportExcel">
+                ดาวน์โหลด Excel
+            </button>
+            <button class="flex-1 px-3 py-2 rounded-full bg-slate-900 text-white" @click="exportPdf">
+                ดาวน์โหลด PDF
+            </button>
+        </div>
+    </div>
+</section>
+{% endblock %}

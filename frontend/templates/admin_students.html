@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}จัดการรายชื่อนักเรียน - SIC Day{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('adminStudentsPage', () => ({
+            students: [],
+            searchQuery: '',
+            editingStudent: null,
+            editForm: { name: '', number: '', classroom: '' },
+            async load() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) { window.location.href = '/admin/login'; return; }
+                const res = await axios.get('/admin/api/students', {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                this.students = res.data;
+            },
+            get filteredStudents() {
+                if (!this.searchQuery) return this.students;
+                const q = this.searchQuery.toLowerCase();
+                return this.students.filter(s =>
+                    s.name.toLowerCase().includes(q) ||
+                    s.number.toLowerCase().includes(q) ||
+                    (s.classroom && s.classroom.toLowerCase().includes(q))
+                );
+            },
+            editStudent(student) {
+                this.editingStudent = { ...student };
+                this.editForm = {
+                    name: student.name,
+                    number: student.number,
+                    classroom: student.classroom || ''
+                };
+            },
+            async saveEdit() {
+                const token = localStorage.getItem('adminToken');
+                try {
+                    const res = await axios.put(`/admin/api/students/${this.editingStudent.id}`, this.editForm, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    const idx = this.students.findIndex(s => s.id === this.editingStudent.id);
+                    if (idx !== -1) this.students[idx] = res.data;
+                    this.editingStudent = null;
+                    Toastify({ text: 'บันทึกข้อมูลสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+                }
+            },
+            async removeStudent(student) {
+                const result = await Swal.fire({
+                    title: 'ยืนยันการลบ?',
+                    text: `คุณต้องการลบ ${student.name} หรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบ',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#e11d48'
+                });
+                if (!result.isConfirmed) return;
+
+                const token = localStorage.getItem('adminToken');
+                try {
+                    await axios.delete(`/admin/api/students/${student.id}`, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.students = this.students.filter(s => s.id !== student.id);
+                    Toastify({ text: 'ลบข้อมูลสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถลบข้อมูลได้', 'error');
+                }
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="adminStudentsPage()" x-init="load()">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-semibold">จัดการรายชื่อนักเรียน</h1>
+            <p class="text-xs text-slate-500 mt-1">แก้ไขรายชื่อและข้อมูลพื้นฐานของนักเรียน</p>
+        </div>
+        <div class="flex gap-2 text-xs">
+            <a href="/admin/dashboard"
+                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600">กลับแดชบอร์ด</a>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <div class="relative max-w-sm">
+            <input type="text" x-model="searchQuery"
+                class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm pl-10 pr-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition"
+                placeholder="ค้นหา ชื่อ หรือ รหัสนักเรียน...">
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-slate-50 dark:bg-slate-800 text-xs font-medium uppercase text-slate-500">
+                <tr>
+                    <th class="px-4 py-3">รหัสนักเรียน</th>
+                    <th class="px-4 py-3">ชื่อ-นามสกุล</th>
+                    <th class="px-4 py-3">ห้อง</th>
+                    <th class="px-4 py-3 text-right">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <template x-for="student in filteredStudents" :key="student.id">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                        <td class="px-4 py-3 font-mono text-xs" x-text="student.number"></td>
+                        <td class="px-4 py-3 font-medium" x-text="student.name"></td>
+                        <td class="px-4 py-3 text-slate-500" x-text="student.classroom || '-'"></td>
+                        <td class="px-4 py-3 text-right space-x-1">
+                            <button @click="editStudent(student)"
+                                class="p-1.5 text-slate-400 hover:text-rose-600 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button @click="removeStudent(student)"
+                                class="p-1.5 text-slate-400 hover:text-rose-600 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+                <tr x-show="filteredStudents.length === 0">
+                    <td colspan="4" class="px-4 py-8 text-center text-slate-400">
+                        ไม่พบข้อมูลนักเรียน
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Edit Modal -->
+    <div x-show="editingStudent" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 py-6">
+            <div class="fixed inset-0 transition-opacity bg-slate-900/40" @click="editingStudent = null"></div>
+
+            <div class="relative w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold">แก้ไขข้อมูลนักเรียน</h3>
+                    <p class="text-xs text-slate-500">รหัส ID: <span x-text="editingStudent?.id"></span></p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label
+                            class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">รหัสนักเรียน</label>
+                        <input type="text" x-model="editForm.number"
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">ชื่อ-นามสกุล</label>
+                        <input type="text" x-model="editForm.name"
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">ห้อง
+                            (ถ้ามี)</label>
+                        <input type="text" x-model="editForm.classroom"
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button @click="editingStudent = null"
+                        class="flex-1 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800">
+                        ยกเลิก
+                    </button>
+                    <button @click="saveEdit"
+                        class="flex-1 px-4 py-2 rounded-full bg-rose-600 text-white text-sm font-medium shadow-sm hover:bg-rose-700">
+                        บันทึก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

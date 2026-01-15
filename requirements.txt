@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+python-jose[cryptography]
+passlib[bcrypt]
+reportlab
+openpyxl
+jinja2
+
