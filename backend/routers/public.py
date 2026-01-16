@@ -83,18 +83,45 @@ def register_student(payload: schemas.RegistrationCreate, db: Session = Depends(
             success=False, message="คุณได้ลงทะเบียนกิจกรรมนี้แล้ว", remaining_seats=None
         )
 
-    # 2) 3-activity limit
-    count_for_student = (
-        db.query(models.Registration)
-        .filter(models.Registration.student_id == student.id)
-        .count()
-    )
-    if count_for_student >= 3:
-        return schemas.MessageResponse(
-            success=False,
-            message="คุณลงทะเบียนครบ 3 กิจกรรมแล้ว ไม่สามารถลงเพิ่มได้",
-            remaining_seats=None,
+    # 2) Quota limit check
+    if activity.group_id:
+        group = db.query(models.ActivityGroup).filter(models.ActivityGroup.id == activity.group_id).first()
+        if group:
+            # Check how many activities in this group student already has
+            count_in_group = (
+                db.query(models.Registration)
+                .join(models.Activity)
+                .filter(
+                    models.Registration.student_id == student.id,
+                    models.Activity.group_id == activity.group_id
+                )
+                .count()
+            )
+            if count_in_group >= group.quota:
+                return schemas.MessageResponse(
+                    success=False,
+                    message=f"คุณลงทะเบียนในกลุ่ม '{group.name}' ครบ {group.quota} กิจกรรมแล้ว",
+                    remaining_seats=None,
+                )
+        # If group quota is NOT reached, we still allow even if total >= 3 
+        # as per user request: "if same student was got 3activity in one group they can register another with custom quota"
+    else:
+        # If NO GROUP, use global 3-activity limit (only counting other ungrouped activities)
+        count_ungrouped = (
+            db.query(models.Registration)
+            .join(models.Activity)
+            .filter(
+                models.Registration.student_id == student.id,
+                models.Activity.group_id == None
+            )
+            .count()
         )
+        if count_ungrouped >= 3:
+            return schemas.MessageResponse(
+                success=False,
+                message="คุณลงทะเบียนครบ 3 กิจกรรมทั่วไปแล้ว ไม่สามารถลงเพิ่มได้",
+                remaining_seats=None,
+            )
 
     # 3) activity status
     if activity.status != "open":

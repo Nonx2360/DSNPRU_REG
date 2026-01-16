@@ -5,14 +5,19 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('adminActivitiesPage', () => ({
             activities: [],
-            form: { title: '', description: '', max_people: 30, status: 'open' },
+            groups: [],
+            form: { title: '', description: '', max_people: 30, status: 'open', group_id: null },
+            groupForm: { name: '', quota: 3 },
+            showGroupManager: false,
             async load() {
                 const token = localStorage.getItem('adminToken');
                 if (!token) { window.location.href = '/admin/login'; return; }
-                const res = await axios.get('/admin/api/activities', {
-                    headers: { Authorization: 'Bearer ' + token }
-                });
-                this.activities = res.data;
+                const [actRes, groupRes] = await Promise.all([
+                    axios.get('/admin/api/activities', { headers: { Authorization: 'Bearer ' + token } }),
+                    axios.get('/admin/api/activity_groups', { headers: { Authorization: 'Bearer ' + token } })
+                ]);
+                this.activities = actRes.data;
+                this.groups = groupRes.data;
             },
             async createActivity() {
                 const token = localStorage.getItem('adminToken');
@@ -22,11 +27,33 @@
                         headers: { Authorization: 'Bearer ' + token }
                     });
                     this.activities.push(res.data);
-                    this.form = { title: '', description: '', max_people: 30, status: 'open' };
+                    this.form = { title: '', description: '', max_people: 30, status: 'open', group_id: null };
                     Toastify({ text: 'สร้างกิจกรรมสำเร็จ', backgroundColor: '#16a34a' }).showToast();
                 } catch (e) {
                     Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างกิจกรรมได้', 'error');
                 }
+            },
+            async createGroup() {
+                const token = localStorage.getItem('adminToken');
+                try {
+                    const res = await axios.post('/admin/api/activity_groups', this.groupForm, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.groups.push(res.data);
+                    this.groupForm.name = '';
+                    Toastify({ text: 'สร้างกลุ่มสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างกลุ่มได้', 'error');
+                }
+            },
+            async removeGroup(groupId) {
+                if (!confirm('ยืนยันการลบกลุ่ม? กิจกรรมในกลุ่มนี้จะไม่ถูกลบแต่จะไม่มีกลุ่ม')) return;
+                const token = localStorage.getItem('adminToken');
+                await axios.delete(`/admin/api/activity_groups/${groupId}`, {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                this.groups = this.groups.filter(g => g.id !== groupId);
+                this.load(); // Refresh activities to clear group info
             },
             async toggle(activity) {
                 const token = localStorage.getItem('adminToken');
@@ -51,7 +78,41 @@
 <section x-data="adminActivitiesPage()" x-init="load()">
     <div class="flex items-center justify-between mb-4">
         <h1 class="text-2xl font-semibold">จัดการกิจกรรม</h1>
-        <a href="/admin/dashboard" class="text-xs text-rose-600 hover:underline">กลับแดชบอร์ด</a>
+        <div class="flex gap-2">
+            <button @click="showGroupManager = !showGroupManager"
+                class="text-xs px-3 py-1 bg-rose-100 text-rose-700 rounded-full hover:bg-rose-200">
+                <span x-text="showGroupManager ? 'ปิดจัดการกลุ่ม' : 'จัดการกลุ่มกิจกรรม'"></span>
+            </button>
+            <a href="/admin/dashboard" class="text-xs text-rose-600 hover:underline">กลับแดชบอร์ด</a>
+        </div>
+    </div>
+
+    <!-- Group Manager -->
+    <div x-show="showGroupManager" x-collapse class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-xl">
+        <h2 class="text-sm font-semibold mb-3">จัดการกลุ่มกิจกรรม</h2>
+        <div class="flex flex-col sm:flex-row gap-2 mb-4">
+            <input type="text" x-model="groupForm.name" placeholder="ชื่อกลุ่มใหม่"
+                class="flex-1 rounded-md border-rose-200 text-sm px-3 py-1.5 focus:ring-rose-500">
+            <div class="flex items-center gap-2">
+                <label class="text-[10px] text-rose-500 font-medium">โควตา:</label>
+                <input type="number" x-model.number="groupForm.quota" min="1" max="10"
+                    class="w-16 rounded-md border-rose-200 text-sm px-2 py-1.5 focus:ring-rose-500">
+            </div>
+            <button @click="createGroup"
+                class="px-4 py-1.5 bg-rose-600 text-white rounded-md text-sm hover:bg-rose-700 whitespace-nowrap">
+                เพิ่มกลุ่ม
+            </button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <template x-for="group in groups" :key="group.id">
+                <div class="flex items-center gap-2 px-3 py-1 bg-white border border-rose-200 rounded-full text-xs">
+                    <span x-text="group.name" class="font-medium"></span>
+                    <span class="text-[10px] text-rose-400" x-text="'(โควตา: ' + group.quota + ')'"></span>
+                    <button @click="removeGroup(group.id)"
+                        class="text-rose-400 hover:text-rose-600 ml-1">&times;</button>
+                </div>
+            </template>
+        </div>
     </div>
 
     <div class="grid md:grid-cols-3 gap-6 mb-6">
@@ -62,6 +123,16 @@
                 <label class="block text-xs mb-1">ชื่อกิจกรรม</label>
                 <input type="text" x-model="form.title"
                     class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
+            </div>
+            <div>
+                <label class="block text-xs mb-1">กลุ่มกิจกรรม</label>
+                <select x-model.number="form.group_id"
+                    class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
+                    <option :value="null">-- ไม่มีกลุ่ม --</option>
+                    <template x-for="group in groups" :key="group.id">
+                        <option :value="group.id" x-text="group.name"></option>
+                    </template>
+                </select>
             </div>
             <div>
                 <label class="block text-xs mb-1">รายละเอียด</label>
@@ -87,7 +158,11 @@
                         class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-2">
                         <div class="flex items-start justify-between gap-2">
                             <div>
-                                <div class="text-sm font-semibold" x-text="activity.title"></div>
+                                <div class="flex items-center gap-2">
+                                    <div class="text-sm font-semibold" x-text="activity.title"></div>
+                                    <span x-show="activity.group_name" x-text="activity.group_name"
+                                        class="px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[10px]"></span>
+                                </div>
                                 <div class="text-xs text-slate-500 mt-1" x-text="activity.description"></div>
                             </div>
                             <span class="px-2 py-0.5 rounded-full text-[11px]"

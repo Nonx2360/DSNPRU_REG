@@ -27,6 +27,57 @@ def admin_login(
     return schemas.Token(access_token=access_token)
 
 
+@router.post("/api/activity_groups", response_model=schemas.ActivityGroup)
+def create_activity_group(
+    group_in: schemas.ActivityGroupCreate,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    group = models.ActivityGroup(name=group_in.name, quota=group_in.quota)
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+    return group
+
+
+@router.get("/api/activity_groups", response_model=List[schemas.ActivityGroup])
+def list_activity_groups(
+    db: Session = Depends(get_db), admin: models.Admin = Depends(get_current_admin)
+):
+    return db.query(models.ActivityGroup).all()
+
+
+@router.put("/api/activity_groups/{group_id}", response_model=schemas.ActivityGroup)
+def update_activity_group(
+    group_id: int,
+    group_in: schemas.ActivityGroupCreate,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    group = db.query(models.ActivityGroup).filter(models.ActivityGroup.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="ไม่พบกลุ่มกิจกรรม")
+    group.name = group_in.name
+    group.quota = group_in.quota
+    db.commit()
+    db.refresh(group)
+    return group
+
+
+@router.delete("/api/activity_groups/{group_id}", status_code=204)
+def delete_activity_group(
+    group_id: int,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    group = db.query(models.ActivityGroup).filter(models.ActivityGroup.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="ไม่พบกลุ่มกิจกรรม")
+    db.delete(group)
+    db.commit()
+    return
+
+
 @router.post("/create_activity", response_model=schemas.Activity)
 def create_activity(
     activity_in: schemas.ActivityCreate,
@@ -38,6 +89,7 @@ def create_activity(
         description=activity_in.description,
         max_people=activity_in.max_people,
         status=activity_in.status,
+        group_id=activity_in.group_id,
     )
     db.add(activity)
     db.commit()
@@ -49,6 +101,8 @@ def create_activity(
         description=activity.description,
         max_people=activity.max_people,
         status=activity.status,
+        group_id=activity.group_id,
+        group_name=activity.group.name if activity.group else None,
         registered_count=0,
         remaining_seats=activity.max_people,
     )
@@ -70,6 +124,8 @@ def admin_list_activities(
                 description=a.description,
                 max_people=a.max_people,
                 status=a.status,
+                group_id=a.group_id,
+                group_name=a.group.name if a.group else None,
                 registered_count=registered,
                 remaining_seats=remaining,
             )
@@ -102,6 +158,8 @@ def update_activity(
         description=activity.description,
         max_people=activity.max_people,
         status=activity.status,
+        group_id=activity.group_id,
+        group_name=activity.group.name if activity.group else None,
         registered_count=registered,
         remaining_seats=remaining,
     )
@@ -129,6 +187,8 @@ def toggle_activity_status(
         description=activity.description,
         max_people=activity.max_people,
         status=activity.status,
+        group_id=activity.group_id,
+        group_name=activity.group.name if activity.group else None,
         registered_count=registered,
         remaining_seats=remaining,
     )
@@ -198,6 +258,8 @@ def dashboard_stats(
                 description=a.description,
                 max_people=a.max_people,
                 status=a.status,
+                group_id=a.group_id,
+                group_name=a.group.name if a.group else None,
                 registered_count=registered,
                 remaining_seats=remaining,
             )

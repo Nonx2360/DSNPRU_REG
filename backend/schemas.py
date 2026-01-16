@@ -26,11 +26,26 @@ class Student(StudentBase):
     model_config = {"from_attributes": True}
 
 
+class ActivityGroupBase(BaseModel):
+    name: str
+    quota: int = 3
+
+class ActivityGroupCreate(ActivityGroupBase):
+    pass
+
+class ActivityGroup(ActivityGroupBase):
+    id: int
+    activities: List["Activity"] = []
+
+    model_config = {"from_attributes": True}
+
+
 class ActivityBase(BaseModel):
     title: str
     description: Optional[str] = None
     max_people: int
     status: str = "open"
+    group_id: Optional[int] = None
 
 
 class ActivityCreate(ActivityBase):
@@ -42,12 +57,14 @@ class ActivityUpdate(BaseModel):
     description: Optional[str] = None
     max_people: Optional[int] = None
     status: Optional[str] = None
+    group_id: Optional[int] = None
 
 
 class Activity(ActivityBase):
     id: int
     registered_count: int = 0
     remaining_seats: int = 0
+    group_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

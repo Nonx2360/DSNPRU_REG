@@ -68,6 +68,15 @@ function registerAlpineComponents() {
             const res = await axios.get('/api/activities');
             this.activities = res.data;
         },
+        groupedActivities() {
+            const groups = {};
+            this.activities.forEach(a => {
+                const groupName = a.group_name || 'อื่นๆ (กิจกรรมทั่วไป)';
+                if (!groups[groupName]) groups[groupName] = [];
+                groups[groupName].push(a);
+            });
+            return groups;
+        },
         selectActivity(activity) {
             if (activity.status !== 'open' || activity.remaining_seats <= 0) {
                 Swal.fire('ไม่สามารถเลือกกิจกรรมนี้ได้', 'กิจกรรมปิดรับสมัครหรือเต็มแล้ว', 'warning');

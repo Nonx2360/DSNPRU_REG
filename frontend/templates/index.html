@@ -1,5 +1,80 @@
 {% extends "base.html" %}
 {% block title %}ลงทะเบียนกิจกรรม - DSNPRU{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        if (Alpine.data('registrationPage')) return; // Avoid double definition
+
+        Alpine.data('registrationPage', () => ({
+            activities: [],
+            form: { name: '', classroom: '', number: '', activity_id: null },
+            searchQuery: '',
+            searchResults: [],
+            async searchStudents() {
+                if (this.searchQuery.length < 2) {
+                    this.searchResults = [];
+                    return;
+                }
+                try {
+                    const res = await axios.get('/api/search_students?q=' + encodeURIComponent(this.searchQuery));
+                    this.searchResults = res.data;
+                } catch (e) {
+                    console.error('Search error', e);
+                }
+            },
+            selectStudent(student) {
+                this.form.name = student.name;
+                this.form.number = student.number;
+                this.form.classroom = student.classroom || '';
+                this.searchQuery = `${student.number} - ${student.name}`;
+                this.searchResults = [];
+            },
+            async loadActivities() {
+                const res = await axios.get('/api/activities');
+                this.activities = res.data;
+            },
+            groupedActivities() {
+                const groups = {};
+                this.activities.forEach(a => {
+                    const groupName = a.group_name || 'อื่นๆ (กิจกรรมทั่วไป)';
+                    if (!groups[groupName]) groups[groupName] = [];
+                    groups[groupName].push(a);
+                });
+                return groups;
+            },
+            selectActivity(activity) {
+                if (activity.status !== 'open' || activity.remaining_seats <= 0) {
+                    Swal.fire('ไม่สามารถเลือกกิจกรรมนี้ได้', 'กิจกรรมปิดรับสมัครหรือเต็มแล้ว', 'warning');
+                    return;
+                }
+                this.form.activity_id = activity.id;
+            },
+            async submit() {
+                if ((!this.form.name && !this.form.number) || !this.form.activity_id) {
+                    Swal.fire('กรุณากรอกข้อมูลให้ครบ', 'ต้องระบุชื่อ-สกุล หรือ เลขประจำตัวนักเรียน อย่างใดอย่างหนึ่ง', 'warning');
+                    return;
+                }
+                try {
+                    const res = await axios.post('/api/register', this.form);
+                    const data = res.data;
+                    if (data.success) {
+                        Swal.fire('สำเร็จ', data.message, 'success');
+                        this.form.activity_id = null;
+                        await this.loadActivities();
+                    } else {
+                        Swal.fire('ไม่สามารถลงทะเบียนได้', data.message, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', 'error');
+                }
+            },
+            init() {
+                this.loadActivities();
+            }
+        }));
+    });
+</script>
+{% endblock %}
 {% block content %}
 <section x-data="registrationPage()">
     <h1 class="text-2xl font-semibold mb-4">ลงทะเบียนเข้าร่วมกิจกรรม DSNPRU</h1>
@@ -77,30 +152,42 @@
                     โหลดกิจกรรมล่าสุด
                 </button>
             </div>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-2 gap-4" id="activity-cards">
-                <template x-for="activity in activities" :key="activity.id">
-                    <button type="button" @click="selectActivity(activity)"
-                        class="text-left rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-4 shadow-sm hover:shadow-md transition group"
-                        :class="form.activity_id === activity.id ? 'ring-2 ring-rose-500' : ''">
-                        <div class="flex items-start justify-between gap-3 mb-2">
-                            <div>
-                                <div class="font-semibold text-sm" x-text="activity.title"></div>
-                                <div class="text-xs text-slate-500 mt-1 line-clamp-2" x-text="activity.description">
-                                </div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-full text-[11px] font-medium"
-                                :class="activity.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
-                                <span x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
-                            </span>
+            <div class="space-y-8" id="activity-cards">
+                <template x-for="(groupActs, groupName) in groupedActivities()" :key="groupName">
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-rose-600 uppercase tracking-widest flex items-center gap-2">
+                            <span class="w-2 h-2 bg-rose-500 rounded-full"></span>
+                            <span x-text="groupName"></span>
+                        </h3>
+                        <div class="grid sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                            <template x-for="activity in groupActs" :key="activity.id">
+                                <button type="button" @click="selectActivity(activity)"
+                                    class="text-left rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-4 shadow-sm hover:shadow-md transition group"
+                                    :class="form.activity_id === activity.id ? 'ring-2 ring-rose-500' : ''">
+                                    <div class="flex items-start justify-between gap-3 mb-2">
+                                        <div>
+                                            <div class="font-semibold text-sm" x-text="activity.title"></div>
+                                            <div class="text-xs text-slate-500 mt-1 line-clamp-2"
+                                                x-text="activity.description">
+                                            </div>
+                                        </div>
+                                        <span class="px-2 py-0.5 rounded-full text-[11px] font-medium"
+                                            :class="activity.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
+                                            <span
+                                                x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs mt-2">
+                                        <span class="text-slate-600 dark:text-slate-300">
+                                            เหลือที่นั่ง
+                                            <span class="font-semibold" x-text="activity.remaining_seats"></span>
+                                            / <span x-text="activity.max_people"></span>
+                                        </span>
+                                    </div>
+                                </button>
+                            </template>
                         </div>
-                        <div class="flex items-center justify-between text-xs mt-2">
-                            <span class="text-slate-600 dark:text-slate-300">
-                                เหลือที่นั่ง
-                                <span class="font-semibold" x-text="activity.remaining_seats"></span>
-                                / <span x-text="activity.max_people"></span>
-                            </span>
-                        </div>
-                    </button>
+                    </div>
                 </template>
             </div>
         </div>
