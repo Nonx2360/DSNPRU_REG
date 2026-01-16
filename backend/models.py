@@ -16,6 +16,16 @@ class Student(Base):
     registrations = relationship("Registration", back_populates="student", cascade="all, delete-orphan")
 
 
+class ActivityGroup(Base):
+    __tablename__ = "activity_groups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    quota = Column(Integer, default=3)
+
+    activities = relationship("Activity", back_populates="group", cascade="all, delete-orphan")
+
+
 class Activity(Base):
     __tablename__ = "activities"
 
@@ -24,7 +34,9 @@ class Activity(Base):
     description = Column(String, nullable=True)
     max_people = Column(Integer, nullable=False)
     status = Column(String, default="open")  # open / close
+    group_id = Column(Integer, ForeignKey("activity_groups.id"), nullable=True)
 
+    group = relationship("ActivityGroup", back_populates="activities")
     registrations = relationship("Registration", back_populates="activity", cascade="all, delete-orphan")
 
 

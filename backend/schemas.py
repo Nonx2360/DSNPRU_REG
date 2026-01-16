@@ -23,8 +23,7 @@ class StudentUpdate(BaseModel):
 class Student(StudentBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class ActivityBase(BaseModel):
@@ -50,8 +49,7 @@ class Activity(ActivityBase):
     registered_count: int = 0
     remaining_seats: int = 0
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class RegistrationBase(BaseModel):
@@ -71,8 +69,7 @@ class Registration(RegistrationBase):
     timestamp: datetime
     student: Student
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class AdminBase(BaseModel):
@@ -87,8 +84,7 @@ class Admin(AdminBase):
     id: int
     is_superuser: bool = False
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class Token(BaseModel):

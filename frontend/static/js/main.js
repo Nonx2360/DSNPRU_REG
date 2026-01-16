@@ -51,7 +51,7 @@ function registerAlpineComponents() {
                 return;
             }
             try {
-                const res = await axios.get('/search_students?q=' + encodeURIComponent(this.searchQuery));
+                const res = await axios.get('/api/search_students?q=' + encodeURIComponent(this.searchQuery));
                 this.searchResults = res.data;
             } catch (e) {
                 console.error('Search error', e);
@@ -65,7 +65,7 @@ function registerAlpineComponents() {
             this.searchResults = [];
         },
         async loadActivities() {
-            const res = await axios.get('/activities');
+            const res = await axios.get('/api/activities');
             this.activities = res.data;
         },
         selectActivity(activity) {
@@ -81,7 +81,7 @@ function registerAlpineComponents() {
                 return;
             }
             try {
-                const res = await axios.post('/register', this.form);
+                const res = await axios.post('/api/register', this.form);
                 const data = res.data;
                 if (data.success) {
                     Swal.fire('สำเร็จ', data.message, 'success');

@@ -227,23 +227,32 @@ def import_students(
         # รหัส, คำนำหน้า, ชื่อ, สกุล
         imported_count = 0
         for row in sheet.iter_rows(min_row=2, values_only=True):
-            code, prefix, first_name, last_name = row[:4]
+            # Format: รหัส(0), คำนำหน้า(1), ชื่อ(2), นามสกุล(3), ห้อง(4)
+            if not row or len(row) < 1:
+                continue
+            
+            # Use safe padding to handle rows with fewer columns
+            data = (list(row) + [None] * 5)[:5]
+            code, prefix, first_name, last_name, classroom = data
+            
             if not code or not first_name:
                 continue
             
-            # Combine name
+            # Combine name for storage: [Prefix][First Name] [Last Name]
             full_name = f"{prefix or ''}{first_name} {last_name or ''}".strip()
             student_number = str(code).strip()
+            classroom_name = str(classroom).strip() if classroom else ""
 
             # Check if student exists
             existing = db.query(models.Student).filter(models.Student.number == student_number).first()
             if existing:
                 existing.name = full_name
+                existing.classroom = classroom_name
             else:
                 new_student = models.Student(
                     number=student_number,
                     name=full_name,
-                    classroom="" # Use empty string to satisfy NOT NULL constraint in existing DB
+                    classroom=classroom_name
                 )
                 db.add(new_student)
             

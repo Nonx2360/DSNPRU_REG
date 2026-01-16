@@ -6,4 +6,4 @@ passlib[bcrypt]
 reportlab
 openpyxl
 jinja2
-
+python-multipart

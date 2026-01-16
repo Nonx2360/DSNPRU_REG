@@ -1,14 +1,31 @@
 {% extends "base.html" %}
-{% block title %}ส่งออกข้อมูล - SIC Day{% endblock %}
+{% block title %}ส่งออกข้อมูล - DSNPRU_REG{% endblock %}
 {% block head_extra %}
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('exportPage', () => ({
             scope: 'all',
             activityId: '',
+            activities: [],
+            async init() {
+                const token = localStorage.getItem('adminToken');
+                if (!token) return;
+                try {
+                    const res = await axios.get('/api/activities', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.activities = res.data;
+                } catch (err) {
+                    console.error('Failed to load activities', err);
+                }
+            },
             async exportExcel() {
                 const token = localStorage.getItem('adminToken');
                 if (!token) { window.location.href = '/admin/login'; return; }
+                if (this.scope === 'activity' && !this.activityId) {
+                    Swal.fire('กรุณาเลือกกิจกรรม', 'กรุณาเลือกกิจกรรมที่ต้องการส่งออก', 'warning');
+                    return;
+                }
                 const params = this.scope === 'activity' ? `?activity_id=${this.activityId}` : '';
                 const res = await axios.get(`/export/excel${params}`, {
                     headers: { Authorization: 'Bearer ' + token },
@@ -19,6 +36,10 @@
             async exportPdf() {
                 const token = localStorage.getItem('adminToken');
                 if (!token) { window.location.href = '/admin/login'; return; }
+                if (this.scope === 'activity' && !this.activityId) {
+                    Swal.fire('กรุณาเลือกกิจกรรม', 'กรุณาเลือกกิจกรรมที่ต้องการส่งออก', 'warning');
+                    return;
+                }
                 const params = this.scope === 'activity' ? `?activity_id=${this.activityId}` : '';
                 const res = await axios.get(`/export/pdf${params}`, {
                     headers: { Authorization: 'Bearer ' + token },
@@ -31,36 +52,90 @@
 </script>
 {% endblock %}
 {% block content %}
-<section x-data="exportPage()">
-    <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-semibold">ส่งออกข้อมูลผู้สมัคร</h1>
-        <a href="/admin/dashboard" class="text-xs text-rose-600 hover:underline">กลับแดชบอร์ด</a>
+<section x-data="exportPage()" x-init="init()">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-semibold">ส่งออกข้อมูลผู้สมัคร</h1>
+            <p class="text-xs text-slate-500 mt-1">ดาวน์โหลดรายชื่อผู้ลงทะเบียนเป็นไฟล์ Excel หรือ PDF</p>
+        </div>
+        <a href="/admin/dashboard"
+            class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition">กลับแดชบอร์ด</a>
     </div>
 
-    <div
-        class="max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 space-y-3">
-        <div>
-            <label class="block text-xs mb-1">ขอบเขตการส่งออก</label>
-            <select x-model="scope"
-                class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
-                <option value="all">ทุกกิจกรรม</option>
-                <option value="activity">ตามกิจกรรม (ระบุรหัสกิจกรรม)</option>
-            </select>
+    <div class="max-w-2xl grid md:grid-cols-2 gap-6">
+        <div
+            class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-5">
+            <div>
+                <label
+                    class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">ขอบเขตการส่งออก</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button @click="scope = 'all'"
+                        :class="scope === 'all' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700'"
+                        class="px-4 py-2 rounded-xl border text-sm font-medium transition text-center">
+                        ทุกกิจกรรม
+                    </button>
+                    <button @click="scope = 'activity'"
+                        :class="scope === 'activity' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700'"
+                        class="px-4 py-2 rounded-xl border text-sm font-medium transition text-center">
+                        ระบุกิจกรรม
+                    </button>
+                </div>
+            </div>
+
+            <div x-show="scope === 'activity'" x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <label
+                    class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">เลือกกิจกรรม</label>
+                <select x-model="activityId"
+                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    <option value="">-- เลือกกิจกรรม --</option>
+                    <template x-for="activity in activities" :key="activity.id">
+                        <option :value="activity.id" x-text="activity.title"></option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="pt-4 space-y-3">
+                <button
+                    class="w-full px-4 py-3 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm font-semibold hover:opacity-90 transition flex items-center justify-center gap-2"
+                    @click="exportExcel">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    ดาวน์โหลด Excel (.xlsx)
+                </button>
+                <button
+                    class="w-full px-4 py-3 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"
+                    @click="exportPdf">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 9h1m1 0h1m-1 0v1m0 1h1m-1 0h1m-5 10V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    ดาวน์โหลด PDF (.pdf)
+                </button>
+            </div>
         </div>
-        <div x-show="scope === 'activity'">
-            <label class="block text-xs mb-1">รหัสกิจกรรม</label>
-            <input type="number" x-model="activityId"
-                class="w-full rounded-md border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm px-3 py-1.5">
-            <p class="text-[11px] text-slate-400 mt-1">ดูรหัสกิจกรรมได้จากหน้าจัดการกิจกรรม</p>
-        </div>
-        <div class="flex gap-2 mt-2 text-sm">
-            <button class="flex-1 px-3 py-2 rounded-full border border-slate-300 dark:border-slate-600"
-                @click="exportExcel">
-                ดาวน์โหลด Excel
-            </button>
-            <button class="flex-1 px-3 py-2 rounded-full bg-slate-900 text-white" @click="exportPdf">
-                ดาวน์โหลด PDF
-            </button>
+
+        <div class="rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 p-6">
+            <h3 class="text-sm font-semibold text-rose-800 dark:text-rose-400 mb-3 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                คำแนะนำการส่งออก
+            </h3>
+            <ul class="text-xs text-rose-700/80 dark:text-rose-400/70 space-y-2 leading-relaxed">
+                <li>• เลือก <strong>"ทุกกิจกรรม"</strong> เพื่อรับไฟล์รวมนักเรียนทุกคนแยกตามกิจกรรม</li>
+                <li>• เลือก <strong>"ระบุกิจกรรม"</strong> หากต้องการรายชื่อเฉพาะกิจกรรมใดกิจกรรมหนึ่ง</li>
+                <li>• ไฟล์ PDF จะถูกจัดรูปแบบเป็นตาราง (Grid Table) เพื่อความสวยงาม</li>
+                <li>• รองรับภาษาไทยสมบูรณ์แบบ</li>
+            </ul>
         </div>
     </div>
 </section>

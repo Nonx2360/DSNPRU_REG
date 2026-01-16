@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}แดชบอร์ดผู้ดูแล - SIC Day{% endblock %}
+{% block title %}แดชบอร์ดผู้ดูแล - DSNPRU_REG{% endblock %}
 {% block head_extra %}
 <script>
     document.addEventListener('alpine:init', () => {
@@ -70,21 +70,22 @@
 {% endblock %}
 {% block content %}
 <section x-data="dashboardPage()" x-init="load()">
-    <div class="flex items-center justify-between mb-4">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-semibold">แดชบอร์ดผู้ดูแลกิจกรรม</h1>
             <p class="text-xs text-slate-500 mt-1">ภาพรวมจำนวนผู้สมัครต่อกิจกรรม</p>
         </div>
-        <div class="flex gap-2 text-xs">
+        <div class="flex flex-wrap gap-2 text-xs">
             <input type="file" x-ref="fileInput" @change="importFile" class="hidden" accept=".xlsx,.xls">
             <button @click="$refs.fileInput.click()"
-                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600">นำเข้ารายชื่อ
+                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">นำเข้ารายชื่อ
                 (Excel)</button>
             <a href="/admin/students"
-                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600">จัดการรายชื่อ</a>
+                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">จัดการรายชื่อ</a>
             <a href="/admin/activities"
-                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600">จัดการกิจกรรม</a>
-            <a href="/admin/export" class="px-3 py-1.5 rounded-full bg-rose-600 text-white">ส่งออกข้อมูล</a>
+                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">จัดการกิจกรรม</a>
+            <a href="/admin/export"
+                class="px-3 py-1.5 rounded-full bg-rose-600 text-white hover:bg-rose-700 transition">ส่งออกข้อมูล</a>
         </div>
     </div>
 

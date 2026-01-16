@@ -14,7 +14,7 @@ templates = Jinja2Templates(directory="frontend/templates")
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="SIC Day Activity Registration API", version="1.0.0")
+    app = FastAPI(title="DSNPRU_REG Activity Registration API", version="1.0.0")
 
     # CORS (allow frontend on same origin or localhost variants)
     app.add_middleware(
@@ -40,7 +40,7 @@ def create_app() -> FastAPI:
             db.commit()
 
     # Routers
-    app.include_router(public.router, prefix="", tags=["public"])
+    app.include_router(public.router, prefix="/api", tags=["public"])
     app.include_router(admin.router, prefix="/admin", tags=["admin"])
     app.include_router(export.router, prefix="/export", tags=["export"])
 

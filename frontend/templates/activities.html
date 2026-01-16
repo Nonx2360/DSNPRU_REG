@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}ดูกิจกรรมทั้งหมด - SIC Day{% endblock %}
+{% block title %}ดูกิจกรรมทั้งหมด - DSNPRU_REG{% endblock %}
 {% block head_extra %}
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('activitiesPage', () => ({
             activities: [],
             async load() {
-                const res = await axios.get('/activities');
+                const res = await axios.get('/api/activities');
                 this.activities = res.data;
                 this.$nextTick(() => {
                     const el = document.getElementById('sortable-activities');

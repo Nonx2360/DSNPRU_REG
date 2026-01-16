@@ -39,6 +39,8 @@ def list_activities(db: Session = Depends(get_db)):
                 description=a.description,
                 max_people=a.max_people,
                 status=a.status,
+                group_id=a.group_id,
+                group_name=a.group.name if a.group else None,
                 registered_count=registered,
                 remaining_seats=remaining,
             )
