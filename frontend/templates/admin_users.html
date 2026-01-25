@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold">User Account Management</h1>
+            <p class="text-xs text-info mt-1 opacity-70">Manage admin and staff accounts</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/admin/dashboard"
+                class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition">
+                Back to Dashboard
+            </a>
+            <button onclick="openCreateModal()"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-lg shadow-emerald-500/20 transition">
+                + New User
+            </button>
+        </div>
+    </div>
+
+    <div
+        class="bg-white dark:bg-slate-900 shadow-md rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+        <table class="min-w-full table-auto">
+            <thead>
+                <tr
+                    class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase text-xs leading-normal">
+                    <th class="py-3 px-6 text-left">ID</th>
+                    <th class="py-3 px-6 text-left">Username</th>
+                    <th class="py-3 px-6 text-center">Role</th>
+                    <th class="py-3 px-6 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body"
+                class="text-slate-600 dark:text-slate-300 text-sm font-light divide-y divide-slate-100 dark:divide-slate-700">
+                <!-- Users will be populated here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div id="create-modal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" aria-hidden="true"
+            onclick="closeCreateModal()"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div
+            class="relative inline-block align-bottom bg-white dark:bg-slate-900 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-200 dark:border-slate-700">
+            <div class="bg-white dark:bg-slate-900 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-slate-900 dark:text-slate-100" id="modal-title">
+                            Create New User</h3>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label
+                                    class="block text-slate-700 dark:text-slate-400 text-xs font-bold mb-2">Username</label>
+                                <input type="text" id="new-username"
+                                    class="shadow-sm appearance-none border border-slate-300 dark:border-slate-600 rounded w-full py-2 px-3 text-slate-700 dark:text-slate-200 dark:bg-slate-800 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-slate-700 dark:text-slate-400 text-xs font-bold mb-2">Password</label>
+                                <input type="password" id="new-password"
+                                    class="shadow-sm appearance-none border border-slate-300 dark:border-slate-600 rounded w-full py-2 px-3 text-slate-700 dark:text-slate-200 dark:bg-slate-800 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-slate-700 dark:text-slate-400 text-xs font-bold mb-2">Role</label>
+                                <select id="new-role"
+                                    class="shadow-sm border border-slate-300 dark:border-slate-600 rounded w-full py-2 px-3 text-slate-700 dark:text-slate-200 dark:bg-slate-800 leading-tight focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="staff">Staff</option>
+                                    <option value="admin">Admin (Superuser)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                <button type="button" onclick="createUser()"
+                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-emerald-600 text-base font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Create
+                </button>
+                <button type="button" onclick="closeCreateModal()"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-800 text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = sessionStorage.getItem('adminToken');
+
+    async function fetchUsers() {
+        if (!token) {
+            window.location.href = '/admin/login';
+            return;
+        }
+
+        try {
+            const response = await fetch('/admin/api/admins', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const users = await response.json();
+                const tbody = document.getElementById('users-table-body');
+                tbody.innerHTML = '';
+
+                users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800 transition";
+                    tr.innerHTML = `
+                    <td class="py-3 px-6 text-left whitespace-nowrap">${user.id}</td>
+                    <td class="py-3 px-6 text-left font-medium">${user.username}</td>
+                    <td class="py-3 px-6 text-center">
+                        <span class="${user.is_superuser ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'} py-1 px-3 rounded-full text-xs font-semibold">
+                            ${user.is_superuser ? 'Admin' : 'Staff'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-6 text-center">
+                        <button onclick="deleteUser(${user.id})" class="text-rose-500 hover:text-rose-700 transition p-1 rounded hover:bg-rose-50 dark:hover:bg-rose-900/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                const error = await response.json();
+                if (response.status === 401 || response.status === 403) {
+                    Swal.fire('Access Denied', error.detail || 'You do not have permission', 'error').then(() => {
+                        window.location.href = '/admin/dashboard';
+                    });
+                } else {
+                    Swal.fire('Error', 'Error fetching users: ' + (error.detail || response.statusText), 'error');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            Swal.fire('Error', 'An error occurred', 'error');
+        }
+    }
+
+    function openCreateModal() {
+        document.getElementById('create-modal').classList.remove('hidden');
+    }
+
+    function closeCreateModal() {
+        document.getElementById('create-modal').classList.add('hidden');
+    }
+
+    async function createUser() {
+        const username = document.getElementById('new-username').value;
+        const password = document.getElementById('new-password').value;
+        const role = document.getElementById('new-role').value;
+
+        if (!username || !password) {
+            Swal.fire('Warning', 'Please fill in all fields', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/admin/api/admins', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
+                    is_superuser: role === 'admin'
+                })
+            });
+
+            if (response.ok) {
+                Swal.fire('Success', 'User created successfully', 'success');
+                closeCreateModal();
+                fetchUsers();
+                // Clear inputs
+                document.getElementById('new-username').value = '';
+                document.getElementById('new-password').value = '';
+            } else {
+                const error = await response.json();
+                Swal.fire('Error', 'Error creating user: ' + (error.detail || response.statusText), 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            Swal.fire('Error', 'An error occurred', 'error');
+        }
+    }
+
+    async function deleteUser(id) {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await fetch(`/admin/api/admins/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                Swal.fire('Deleted!', 'User has been deleted.', 'success');
+                fetchUsers();
+            } else {
+                const error = await response.json();
+                Swal.fire('Error', 'Error deleting user: ' + (error.detail || response.statusText), 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            Swal.fire('Error', 'An error occurred', 'error');
+        }
+    }
+
+    fetchUsers();
+</script>
+{% endblock %}

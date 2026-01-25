@@ -22,6 +22,8 @@ class ActivityGroup(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
     quota = Column(Integer, default=3)
+    allowed_classrooms = Column(String, nullable=True)  # Comma separated classrooms
+    is_visible = Column(Boolean, default=True)
 
     activities = relationship("Activity", back_populates="group", cascade="all, delete-orphan")
 
@@ -34,6 +36,10 @@ class Activity(Base):
     description = Column(String, nullable=True)
     max_people = Column(Integer, nullable=False)
     status = Column(String, default="open")  # open / close
+    allowed_classrooms = Column(String, nullable=True)  # Comma separated classrooms
+    start_time = Column(DateTime, nullable=True)
+    end_time = Column(DateTime, nullable=True)
+    color = Column(String, default="#e11d48") # Default rose-600 hex
     group_id = Column(Integer, ForeignKey("activity_groups.id"), nullable=True)
 
     group = relationship("ActivityGroup", back_populates="activities")
@@ -64,3 +70,13 @@ class Admin(Base):
     is_superuser = Column(Boolean, default=False)
 
 
+
+class AdminLog(Base):
+    __tablename__ = "admin_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_username = Column(String, index=True, nullable=False)
+    action = Column(String, nullable=False)
+    details = Column(String, nullable=True)
+    ip_address = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)

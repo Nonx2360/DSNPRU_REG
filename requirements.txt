@@ -3,6 +3,7 @@ uvicorn[standard]
 SQLAlchemy
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt==4.0.1
 reportlab
 openpyxl
 jinja2

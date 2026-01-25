@@ -61,6 +61,10 @@ def create_app() -> FastAPI:
     async def activities_page(request: Request):
         return templates.TemplateResponse("activities.html", {"request": request})
 
+    @app.get("/about")
+    async def about_page(request: Request):
+        return templates.TemplateResponse("about.html", {"request": request})
+
     @app.get("/admin/login")
     async def admin_login_page(request: Request):
         return templates.TemplateResponse("admin_login.html", {"request": request})
@@ -90,4 +94,44 @@ def create_app() -> FastAPI:
     return app
 
 
+# Configure logging
+import logging
+from logging.handlers import RotatingFileHandler
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("uvicorn")
+handler = RotatingFileHandler("app.log", maxBytes=1000000, backupCount=3)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 app = create_app()
+
+@app.on_event("startup")
+async def startup_event():
+    logger = logging.getLogger("uvicorn")
+    logger.info("Application startup: DSNPRU_REG Activity Registration API started")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger = logging.getLogger("uvicorn")
+    logger.info("Application shutdown")
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger = logging.getLogger("uvicorn")
+    logger.info(f"Request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
+
+
+# Additional Admin Page Routes
+
+@app.get("/admin/logs")
+async def admin_logs_page(request: Request):
+    return templates.TemplateResponse("admin_logs.html", {"request": request})
+
+@app.get("/admin/users")
+async def admin_users_page(request: Request):
+    return templates.TemplateResponse("admin_users.html", {"request": request})

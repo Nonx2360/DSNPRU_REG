@@ -1,21 +1,87 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 import openpyxl
 import io
+import os  # Added for log file reading
 
 from .. import models, schemas
-from ..auth import authenticate_admin, create_access_token, get_current_admin, get_password_hash
+from ..auth import authenticate_admin, create_access_token, get_current_admin, get_current_superuser, get_password_hash, verify_password
 from ..database import get_db
+from ..utils import log_action
+
 
 router = APIRouter()
 
 
+@router.get("/api/logs", response_model=List[schemas.AdminLog])
+def read_logs(
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_superuser),
+):
+    return db.query(models.AdminLog).order_by(models.AdminLog.timestamp.desc()).all()
+
+
+@router.get("/api/admins", response_model=List[schemas.Admin])
+def list_admins(
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_superuser),
+):
+    return db.query(models.Admin).all()
+
+
+
+@router.post("/api/admins", response_model=schemas.Admin)
+def create_admin(
+    admin_in: schemas.AdminCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_superuser),
+):
+    existing = db.query(models.Admin).filter(models.Admin.username == admin_in.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="ชื่อผู้ใช้นี้มีอยู่แล้ว")
+    
+    new_admin = models.Admin(
+        username=admin_in.username,
+        password_hash=get_password_hash(admin_in.password),
+        is_superuser=admin_in.is_superuser
+    )
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
+    log_action(db, admin.username, "CREATE_ADMIN", f"Created admin: {new_admin.username}", request)
+    return new_admin
+
+
+@router.delete("/api/admins/{admin_id}", status_code=204)
+def delete_admin(
+    admin_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_superuser),
+):
+    admin_to_delete = db.query(models.Admin).filter(models.Admin.id == admin_id).first()
+    if not admin_to_delete:
+        raise HTTPException(status_code=404, detail="ไม่พบผู้ใช้งานนี้")
+    
+    if admin_to_delete.id == admin.id:
+         raise HTTPException(status_code=400, detail="ไม่สามารถลบบัญชีตัวเองได้")
+
+    tgt_username = admin_to_delete.username
+    db.delete(admin_to_delete)
+    db.commit()
+    log_action(db, admin.username, "DELETE_ADMIN", f"Deleted admin: {tgt_username}", request)
+    return
+
+
 @router.post("/login", response_model=schemas.Token)
 def admin_login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(), 
+    db: Session = Depends(get_db)
 ):
     admin = authenticate_admin(db, form_data.username, form_data.password)
     if not admin:
@@ -24,19 +90,53 @@ def admin_login(
             detail="ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
         )
     access_token = create_access_token(data={"sub": admin.username})
+    log_action(db, admin.username, "LOGIN", "Logged into system", request)
     return schemas.Token(access_token=access_token)
+
+
+@router.post("/logout", status_code=204)
+def admin_logout(
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    log_action(db, admin.username, "LOGOUT", "Logged out of system", request)
+    return
+
+
+@router.put("/change-password", status_code=204)
+def change_password(
+    password_in: schemas.ChangePasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    if not verify_password(password_in.old_password, admin.password_hash):
+        raise HTTPException(status_code=400, detail="รหัสผ่านเดิมไม่ถูกต้อง")
+    
+    admin.password_hash = get_password_hash(password_in.new_password)
+    db.commit()
+    log_action(db, admin.username, "CHANGE_PASSWORD", "Changed own password", request)
+    return
 
 
 @router.post("/api/activity_groups", response_model=schemas.ActivityGroup)
 def create_activity_group(
     group_in: schemas.ActivityGroupCreate,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
-    group = models.ActivityGroup(name=group_in.name, quota=group_in.quota)
+    group = models.ActivityGroup(
+        name=group_in.name, 
+        quota=group_in.quota,
+        allowed_classrooms=group_in.allowed_classrooms,
+        is_visible=group_in.is_visible
+    )
     db.add(group)
     db.commit()
     db.refresh(group)
+    log_action(db, admin.username, "CREATE_ACTIVITY_GROUP", f"Created group: {group.name}", request)
     return group
 
 
@@ -51,6 +151,7 @@ def list_activity_groups(
 def update_activity_group(
     group_id: int,
     group_in: schemas.ActivityGroupCreate,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -61,26 +162,31 @@ def update_activity_group(
     group.quota = group_in.quota
     db.commit()
     db.refresh(group)
+    log_action(db, admin.username, "UPDATE_ACTIVITY_GROUP", f"Updated group: {group.name}", request)
     return group
 
 
 @router.delete("/api/activity_groups/{group_id}", status_code=204)
 def delete_activity_group(
     group_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
     group = db.query(models.ActivityGroup).filter(models.ActivityGroup.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="ไม่พบกลุ่มกิจกรรม")
+    name = group.name
     db.delete(group)
     db.commit()
+    log_action(db, admin.username, "DELETE_ACTIVITY_GROUP", f"Deleted group: {name}", request)
     return
 
 
 @router.post("/create_activity", response_model=schemas.Activity)
 def create_activity(
     activity_in: schemas.ActivityCreate,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -89,11 +195,16 @@ def create_activity(
         description=activity_in.description,
         max_people=activity_in.max_people,
         status=activity_in.status,
+        allowed_classrooms=activity_in.allowed_classrooms,
+        start_time=activity_in.start_time,
+        end_time=activity_in.end_time,
+        color=activity_in.color,
         group_id=activity_in.group_id,
     )
     db.add(activity)
     db.commit()
     db.refresh(activity)
+    log_action(db, admin.username, "CREATE_ACTIVITY", f"Created activity: {activity.title}", request)
 
     return schemas.Activity(
         id=activity.id,
@@ -101,6 +212,10 @@ def create_activity(
         description=activity.description,
         max_people=activity.max_people,
         status=activity.status,
+        allowed_classrooms=activity.allowed_classrooms,
+        start_time=activity.start_time,
+        end_time=activity.end_time,
+        color=activity.color,
         group_id=activity.group_id,
         group_name=activity.group.name if activity.group else None,
         registered_count=0,
@@ -124,6 +239,10 @@ def admin_list_activities(
                 description=a.description,
                 max_people=a.max_people,
                 status=a.status,
+                allowed_classrooms=a.allowed_classrooms,
+                start_time=a.start_time,
+                end_time=a.end_time,
+                color=a.color,
                 group_id=a.group_id,
                 group_name=a.group.name if a.group else None,
                 registered_count=registered,
@@ -137,6 +256,7 @@ def admin_list_activities(
 def update_activity(
     activity_id: int,
     activity_in: schemas.ActivityUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -149,6 +269,7 @@ def update_activity(
 
     db.commit()
     db.refresh(activity)
+    log_action(db, admin.username, "UPDATE_ACTIVITY", f"Updated activity: {activity.title}", request)
 
     registered = len(activity.registrations)
     remaining = max(activity.max_people - registered, 0)
@@ -158,6 +279,10 @@ def update_activity(
         description=activity.description,
         max_people=activity.max_people,
         status=activity.status,
+        allowed_classrooms=activity.allowed_classrooms,
+        start_time=activity.start_time,
+        end_time=activity.end_time,
+        color=activity.color,
         group_id=activity.group_id,
         group_name=activity.group.name if activity.group else None,
         registered_count=registered,
@@ -168,6 +293,7 @@ def update_activity(
 @router.post("/activities/{activity_id}/toggle", response_model=schemas.Activity)
 def toggle_activity_status(
     activity_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -178,6 +304,7 @@ def toggle_activity_status(
     activity.status = "close" if activity.status == "open" else "open"
     db.commit()
     db.refresh(activity)
+    log_action(db, admin.username, "TOGGLE_ACTIVITY", f"Toggled status of '{activity.title}' to {activity.status}", request)
 
     registered = len(activity.registrations)
     remaining = max(activity.max_people - registered, 0)
@@ -187,6 +314,10 @@ def toggle_activity_status(
         description=activity.description,
         max_people=activity.max_people,
         status=activity.status,
+        allowed_classrooms=activity.allowed_classrooms,
+        start_time=activity.start_time,
+        end_time=activity.end_time,
+        color=activity.color,
         group_id=activity.group_id,
         group_name=activity.group.name if activity.group else None,
         registered_count=registered,
@@ -197,6 +328,7 @@ def toggle_activity_status(
 @router.delete("/activities/{activity_id}", status_code=204)
 def delete_activity(
     activity_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -204,8 +336,10 @@ def delete_activity(
     if not activity:
         raise HTTPException(status_code=404, detail="ไม่พบกิจกรรม")
 
+    title = activity.title
     db.delete(activity)
     db.commit()
+    log_action(db, admin.username, "DELETE_ACTIVITY", f"Deleted activity: {title}", request)
     return
 
 
@@ -221,6 +355,24 @@ def get_registrations_for_activity(
         .all()
     )
     return regs
+
+
+@router.delete("/registrations/{reg_id}", status_code=204)
+def delete_registration(
+    reg_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    reg = db.query(models.Registration).filter(models.Registration.id == reg_id).first()
+    if not reg:
+        raise HTTPException(status_code=404, detail="ไม่พบข้อมูลการลงทะเบียน")
+    
+    details = f"Removed Student {reg.student.number} ({reg.student.name}) from activity ID {reg.activity_id} ({reg.activity.title})"
+    db.delete(reg)
+    db.commit()
+    log_action(db, admin.username, "DELETE_REGISTRATION", details, request)
+    return
 
 
 @router.get("/search_students", response_model=List[schemas.Student])
@@ -273,6 +425,7 @@ def dashboard_stats(
 
 @router.post("/api/import_students", response_model=schemas.MessageResponse)
 def import_students(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
@@ -321,6 +474,7 @@ def import_students(
             imported_count += 1
 
         db.commit()
+        log_action(db, admin.username, "IMPORT_STUDENTS", f"Imported {imported_count} students", request)
         return schemas.MessageResponse(
             success=True, message=f"นำเข้าข้อมูลนักเรียนสำเร็จ {imported_count} คน"
         )
@@ -341,6 +495,7 @@ def admin_list_students(
 def update_student(
     student_id: int,
     student_in: schemas.StudentUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -353,12 +508,14 @@ def update_student(
 
     db.commit()
     db.refresh(student)
+    log_action(db, admin.username, "UPDATE_STUDENT", f"Updated student: {student.name}", request)
     return student
 
 
 @router.delete("/api/students/{student_id}", status_code=204)
 def delete_student(
     student_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -366,14 +523,17 @@ def delete_student(
     if not student:
         raise HTTPException(status_code=404, detail="ไม่พบข้อมูลนักเรียน")
 
+    name = student.name
     db.delete(student)
     db.commit()
+    log_action(db, admin.username, "DELETE_STUDENT", f"Deleted student: {name}", request)
     return
 
 
 @router.post("/api/students/bulk-delete", response_model=schemas.MessageResponse)
 def bulk_delete_students(
     payload: schemas.BulkActionIds,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -382,12 +542,14 @@ def bulk_delete_students(
     for student in students:
         db.delete(student)
     db.commit()
+    log_action(db, admin.username, "BULK_DELETE_STUDENTS", f"Deleted {count} students", request)
     return schemas.MessageResponse(success=True, message=f"ลบข้อมูลนักเรียนสำเร็จ {count} รายการ")
 
 
 @router.post("/api/students/bulk-update-class", response_model=schemas.MessageResponse)
 def bulk_update_classroom(
     payload: schemas.BulkUpdateClassroom,
+    request: Request,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -395,4 +557,15 @@ def bulk_update_classroom(
         {models.Student.classroom: payload.classroom}, synchronize_session=False
     )
     db.commit()
+    log_action(db, admin.username, "BULK_UPDATE_CLASS", f"Updated {len(payload.ids)} students to {payload.classroom}", request)
     return schemas.MessageResponse(success=True, message=f"อัปเดตห้องเรียนสำเร็จ {len(payload.ids)} รายการ")
+
+
+@router.get("/api/classrooms", response_model=List[str])
+def list_classrooms(
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    classrooms = db.query(models.Student.classroom).distinct().all()
+    # Flatten list of tuples and filter out None
+    return sorted([c[0] for c in classrooms if c[0]])

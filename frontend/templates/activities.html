@@ -5,9 +5,19 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('activitiesPage', () => ({
             activities: [],
+            searchQuery: '',
             groupedActivities() {
                 const groups = {};
-                this.activities.forEach(a => {
+                // Filter activities based on search query
+                const filtered = this.activities.filter(a => {
+                    if (!this.searchQuery) return true;
+                    const query = this.searchQuery.toLowerCase();
+                    return (a.title && a.title.toLowerCase().includes(query)) ||
+                        (a.description && a.description.toLowerCase().includes(query)) ||
+                        (a.group_name && a.group_name.toLowerCase().includes(query));
+                });
+
+                filtered.forEach(a => {
                     const groupName = a.group_name || 'อื่นๆ (กิจกรรมทั่วไป)';
                     if (!groups[groupName]) groups[groupName] = [];
                     groups[groupName].push(a);
@@ -24,11 +34,44 @@
 {% endblock %}
 {% block content %}
 <section x-data="activitiesPage()" x-init="load()">
-    <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-semibold">ดูกิจกรรมทั้งหมด</h1>
-        <a href="/" class="text-xs text-rose-600 hover:underline">กลับไปหน้าลงทะเบียน</a>
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold">ดูกิจกรรมทั้งหมด</h1>
+            <p class="text-xs text-slate-500 mt-1">รายชื่อกิจกรรมที่เปิดรับสมัครในขณะนี้</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="relative w-full md:w-64">
+                <input type="text" x-model="searchQuery" placeholder="ค้นหากิจกรรม..."
+                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm pl-10 pr-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+            <a href="/" class="text-xs text-rose-600 hover:underline whitespace-nowrap">กลับไปหน้าลงทะเบียน</a>
+        </div>
     </div>
+
     <div class="space-y-10" id="sortable-activities">
+        <template x-if="Object.keys(groupedActivities()).length === 0">
+            <div
+                class="text-center py-20 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                <div class="text-slate-400 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <p class="text-slate-500 font-medium">ไม่พบกิจกรรมที่คุณกำลังค้นหา</p>
+                <button @click="searchQuery = ''"
+                    class="text-xs text-rose-600 hover:underline mt-2">ล้างการค้นหา</button>
+            </div>
+        </template>
+
         <template x-for="(groupActs, groupName) in groupedActivities()" :key="groupName">
             <div class="space-y-4">
                 <h3 class="text-xs font-bold text-rose-600 uppercase tracking-widest flex items-center gap-2">
@@ -37,12 +80,29 @@
                 </h3>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <template x-for="activity in groupActs" :key="activity.id">
-                        <div
-                            class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-4 shadow-sm hover:shadow-md transition group">
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-4 shadow-sm hover:shadow-md transition group"
+                            :style="`border-top: 4px solid ${activity.color}`">
                             <div class="flex items-start justify-between gap-3 mb-2">
                                 <div>
                                     <div class="font-semibold text-sm" x-text="activity.title"></div>
                                     <div class="text-xs text-slate-500 mt-1 line-clamp-2" x-text="activity.description">
+                                    </div>
+                                    <div class="mt-2 flex flex-wrap gap-1">
+                                        <template x-if="activity.allowed_classrooms">
+                                            <span
+                                                class="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400"
+                                                x-text="'ห้อง: ' + activity.allowed_classrooms"></span>
+                                        </template>
+                                        <template x-if="activity.start_time">
+                                            <span
+                                                class="text-[10px] bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded text-emerald-600"
+                                                x-text="'เปิด: ' + new Date(activity.start_time).toLocaleString()"></span>
+                                        </template>
+                                        <template x-if="activity.end_time">
+                                            <span
+                                                class="text-[10px] bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded text-rose-600"
+                                                x-text="'ปิด: ' + new Date(activity.end_time).toLocaleString()"></span>
+                                        </template>
                                     </div>
                                 </div>
                                 <span class="px-2 py-0.5 rounded-full text-[11px] font-medium"

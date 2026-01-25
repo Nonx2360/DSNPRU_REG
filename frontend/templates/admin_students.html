@@ -10,7 +10,7 @@
             editForm: { name: '', number: '', classroom: '' },
             selectedIds: [],
             async load() {
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 if (!token) { window.location.href = '/admin/login'; return; }
                 const res = await axios.get('/admin/api/students', {
                     headers: { Authorization: 'Bearer ' + token }
@@ -49,7 +49,7 @@
                 });
                 if (!result.isConfirmed) return;
 
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 try {
                     await axios.post('/admin/api/students/bulk-delete', { ids: this.selectedIds }, {
                         headers: { Authorization: 'Bearer ' + token }
@@ -73,7 +73,7 @@
 
                 if (classroom === undefined) return;
 
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 try {
                     await axios.post('/admin/api/students/bulk-update-class', {
                         ids: this.selectedIds,
@@ -100,7 +100,7 @@
                 };
             },
             async saveEdit() {
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 try {
                     const res = await axios.put(`/admin/api/students/${this.editingStudent.id}`, this.editForm, {
                         headers: { Authorization: 'Bearer ' + token }
@@ -125,7 +125,7 @@
                 });
                 if (!result.isConfirmed) return;
 
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 try {
                     await axios.delete(`/admin/api/students/${student.id}`, {
                         headers: { Authorization: 'Bearer ' + token }
@@ -137,7 +137,7 @@
                 }
             },
             async exportStudentsExcel() {
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 if (!token) return;
                 const res = await axios.get('/export/students/excel', {
                     headers: { Authorization: 'Bearer ' + token },
@@ -146,13 +146,14 @@
                 saveAs(res.data, `students_${new Date().getTime()}.xlsx`);
             },
             async exportStudentsPdf() {
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 if (!token) return;
                 const res = await axios.get('/export/students/pdf', {
                     headers: { Authorization: 'Bearer ' + token },
                     responseType: 'blob'
                 });
-                saveAs(res.data, `students_${new Date().getTime()}.pdf`);
+                const blobUrl = URL.createObjectURL(res.data);
+                window.open(blobUrl, '_blank');
             }
         }));
     });
@@ -160,14 +161,14 @@
 {% endblock %}
 {% block content %}
 <section x-data="adminStudentsPage()" x-init="load()">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-semibold">จัดการรายชื่อนักเรียน</h1>
             <p class="text-xs text-slate-500 mt-1">แก้ไขรายชื่อและข้อมูลพื้นฐานของนักเรียน</p>
         </div>
-        <div class="flex flex-wrap gap-2 text-xs">
+        <div class="flex flex-wrap gap-2 text-[11px] sm:text-xs">
             <button @click="exportStudentsExcel"
-                class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition">
+                class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -176,7 +177,7 @@
                 Export Excel
             </button>
             <button @click="exportStudentsPdf"
-                class="px-3 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 transition">
+                class="px-3 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 transition shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -187,7 +188,7 @@
                 Export PDF
             </button>
             <a href="/admin/dashboard"
-                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">กลับแดชบอร์ด</a>
+                class="px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition">กลับแดชบอร์ด</a>
         </div>
     </div>
 
@@ -268,33 +269,24 @@
     <!-- Floating Bulk Action Bar -->
     <div x-show="selectedIds.length > 0" x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
-        class="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+        class="fixed bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 z-40 sm:w-auto max-w-xl">
         <div
-            class="bg-slate-900 dark:bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 border border-white/10">
-            <div class="text-sm font-medium border-l border-white/20 pl-4 h-6 flex items-center">
-                เลือกอยู่ <span class="mx-1 text-rose-400 font-bold" x-text="selectedIds.length"></span> คน
+            class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur text-white p-3 sm:px-6 sm:py-3 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center gap-3 sm:gap-6 border border-white/10">
+            <div
+                class="text-xs sm:text-sm font-medium border-b sm:border-b-0 sm:border-l border-white/20 pb-2 sm:pb-0 sm:pl-4 flex items-center justify-center w-full sm:w-auto">
+                เลือกอยุ่ <span class="mx-1 text-rose-400 font-bold" x-text="selectedIds.length"></span> คน
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 w-full sm:w-auto justify-center">
                 <button @click="bulkUpdateClass"
-                    class="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-medium transition flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    ย้ายห้องเรียน
+                    class="flex-1 sm:flex-none px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1.5">
+                    ย้ายห้อง
                 </button>
                 <button @click="bulkDelete"
-                    class="px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-xs font-medium transition flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    class="flex-1 sm:flex-none px-3 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-[10px] sm:text-xs font-medium transition flex items-center justify-center gap-1.5">
                     ลบที่เลือก
                 </button>
                 <button @click="selectedIds = []"
-                    class="text-xs text-slate-400 hover:text-white px-2 transition">ยกเลิก</button>
+                    class="text-[10px] sm:text-xs text-slate-400 hover:text-white px-2 transition">ยกเลิก</button>
             </div>
         </div>
     </div>

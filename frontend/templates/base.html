@@ -37,7 +37,7 @@
     <script src="/static/js/sortable.min.js"></script>
     <link rel="stylesheet" href="/static/css/datatables.min.css">
     <script src="/static/js/datatables.min.js"></script>
-    <script src="/static/js/main.js?v=1.1"></script>
+    <script src="/static/js/main.js?v=1.2"></script>
     <script src="/static/js/alpine.min.js" defer></script>
     {% block head_extra %}{% endblock %}
 </head>
@@ -46,19 +46,21 @@
     <div id="spinner-overlay" class="hidden fixed inset-0 bg-slate-900/40 z-40 items-center justify-center"></div>
     <header class="bg-rose-600 dark:bg-rose-700 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between" x-data="{ open: false }">
-            <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3 hover:opacity-90 transition group">
                 <img src="/static/img/logo.png" alt="Logo" class="w-10 h-10 object-contain">
                 <div>
                     <div class="font-semibold text-lg leading-tight">DSNPRU_REG</div>
-                    <div class="text-[11px] text-rose-100 opacity-90">ระบบลงทะเบียนกิจกรรมโรงเรียน</div>
+                    <div class="text-[11px] text-rose-100 opacity-90 group-hover:text-white transition">
+                        ระบบลงทะเบียนกิจกรรมโรงเรียน</div>
                 </div>
-            </div>
+            </a>
 
             <!-- Navbar Desktop -->
             <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
                 <a href="/" class="hover:text-rose-100 transition">ลงทะเบียน</a>
                 <a href="/activities" class="hover:text-rose-100 transition">ดูกิจกรรม</a>
-                <a href="/admin/login" class="hover:text-rose-100 transition">สำหรับครู (Admin)</a>
+                <a href="/about" class="hover:text-rose-100 transition">เกี่ยวกับเรา</a>
+
                 <button type="button"
                     class="ml-2 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition text-xs border border-white/10"
                     @click="dark = !dark">
@@ -107,9 +109,9 @@
                         class="px-3 py-2 rounded-lg hover:bg-white/10 transition text-sm font-medium">ลงทะเบียน</a>
                     <a href="/activities"
                         class="px-3 py-2 rounded-lg hover:bg-white/10 transition text-sm font-medium">ดูกิจกรรม</a>
-                    <a href="/admin/login"
-                        class="px-3 py-2 rounded-lg hover:bg-white/10 transition text-sm font-medium">สำหรับครู
-                        (Admin)</a>
+                    <a href="/about"
+                        class="px-3 py-2 rounded-lg hover:bg-white/10 transition text-sm font-medium">เกี่ยวกับเรา</a>
+
                 </div>
             </div>
         </div>
@@ -122,7 +124,8 @@
     <footer class="border-t border-slate-200/60 dark:border-slate-700 mt-8">
         <div
             class="max-w-6xl mx-auto px-4 py-4 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>© ระบบลงทะเบียนกิจกรรม DSNPRU_REG</span>
+            <span><a href="/admin/login" class="cursor-default hover:text-inherit">©</a> ระบบลงทะเบียนกิจกรรม
+                DSNPRU_REG</span>
             <span>code by ณัฐชนน รอดน้อย 04824</span>
         </div>
     </footer>

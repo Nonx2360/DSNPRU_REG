@@ -118,7 +118,7 @@ function registerAlpineComponents() {
             formData.append('grant_type', 'password');
             try {
                 const res = await axios.post('/admin/login', formData);
-                localStorage.setItem('adminToken', res.data.access_token);
+                sessionStorage.setItem('adminToken', res.data.access_token);
                 Toastify({ text: 'เข้าสู่ระบบสำเร็จ', backgroundColor: '#16a34a' }).showToast();
                 window.location.href = '/admin/dashboard';
             } catch (e) {

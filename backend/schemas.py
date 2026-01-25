@@ -29,6 +29,8 @@ class Student(StudentBase):
 class ActivityGroupBase(BaseModel):
     name: str
     quota: int = 3
+    allowed_classrooms: Optional[str] = None
+    is_visible: bool = True
 
 class ActivityGroupCreate(ActivityGroupBase):
     pass
@@ -45,6 +47,10 @@ class ActivityBase(BaseModel):
     description: Optional[str] = None
     max_people: int
     status: str = "open"
+    allowed_classrooms: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    color: str = "#e11d48"
     group_id: Optional[int] = None
 
 
@@ -57,6 +63,10 @@ class ActivityUpdate(BaseModel):
     description: Optional[str] = None
     max_people: Optional[int] = None
     status: Optional[str] = None
+    allowed_classrooms: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    color: Optional[str] = None
     group_id: Optional[int] = None
 
 
@@ -95,11 +105,34 @@ class AdminBase(BaseModel):
 
 class AdminCreate(AdminBase):
     password: str
+    is_superuser: bool = False
+
+
+class AdminUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    is_superuser: Optional[bool] = None
 
 
 class Admin(AdminBase):
     id: int
     is_superuser: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
+class AdminLog(BaseModel):
+    id: int
+    admin_username: str
+    action: str
+    details: Optional[str] = None
+    ip_address: Optional[str] = None
+    timestamp: datetime
 
     model_config = {"from_attributes": True}
 
@@ -130,3 +163,11 @@ class BulkUpdateClassroom(BaseModel):
     classroom: str
 
 
+class SystemInfo(BaseModel):
+    version: str
+    environment: str
+    status: str
+    total_students: int
+    total_activities: int
+    total_registrations: int
+    last_updated: str

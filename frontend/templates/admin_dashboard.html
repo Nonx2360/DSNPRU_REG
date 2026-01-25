@@ -5,12 +5,25 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('dashboardPage', () => ({
             stats: null,
+            isAdmin: false,
             async load() {
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 if (!token) {
                     window.location.href = '/admin/login';
                     return;
                 }
+
+                // Decode token to get basic info (or better, have an endpoint for 'me')
+                // For now, we'll try to fetch logs to see if we are admin, OR assume true/false based on token payload if we had role there.
+                // Better approach: fetch a 'me' endpoint or similar. Since we don't have one, let's try to fetch '/admin/api/admins' which is restricted.
+                // If 200 => superuser. If 403 => staff.
+                try {
+                    await axios.get('/admin/api/admins', { headers: { Authorization: 'Bearer ' + token } });
+                    this.isAdmin = true;
+                } catch (e) {
+                    this.isAdmin = false;
+                }
+
                 const res = await axios.get('/admin/api/dashboard', {
                     headers: { Authorization: 'Bearer ' + token }
                 });
@@ -45,7 +58,7 @@
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const token = localStorage.getItem('adminToken');
+                const token = sessionStorage.getItem('adminToken');
                 try {
                     const res = await axios.post('/admin/api/import_students', formData, {
                         headers: {
@@ -63,6 +76,41 @@
                     Swal.fire('เกิดข้อผิดพลาด', err.response?.data?.detail || 'ไม่สามารถนำเข้าข้อมูลได้', 'error');
                 }
                 e.target.value = ''; // Reset
+                e.target.value = ''; // Reset
+            },
+            showPasswordModal: false,
+            passwordForm: { old_password: '', new_password: '', confirm_password: '' },
+            async changePassword() {
+                if (this.passwordForm.new_password !== this.passwordForm.confirm_password) {
+                    Swal.fire('รหัสผ่านไม่ตรงกัน', 'กรุณายืนยันรหัสผ่านใหม่ให้ถูกต้อง', 'warning');
+                    return;
+                }
+                const token = sessionStorage.getItem('adminToken');
+                try {
+                    await axios.put('/admin/change-password', {
+                        old_password: this.passwordForm.old_password,
+                        new_password: this.passwordForm.new_password
+                    }, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.showPasswordModal = false;
+                    this.passwordForm = { old_password: '', new_password: '', confirm_password: '' };
+                    Swal.fire('สำเร็จ', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว', 'success');
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', e.response?.data?.detail || 'ไม่สามารถเปลี่ยนรหัสผ่านได้', 'error');
+                }
+            },
+            async logout() {
+                const token = sessionStorage.getItem('adminToken');
+                if (token) {
+                    try {
+                        await axios.post('/admin/logout', {}, {
+                            headers: { Authorization: 'Bearer ' + token }
+                        });
+                    } catch (e) { console.error('Logout log failed', e); }
+                }
+                sessionStorage.removeItem('adminToken');
+                window.location.href = '/admin/login';
             }
         }));
     });
@@ -75,17 +123,79 @@
             <h1 class="text-2xl font-semibold">แดชบอร์ดผู้ดูแลกิจกรรม</h1>
             <p class="text-xs text-slate-500 mt-1">ภาพรวมจำนวนผู้สมัครต่อกิจกรรม</p>
         </div>
-        <div class="flex flex-wrap gap-2 text-xs">
+    </div>
+    <!-- Toolbar -->
+    <div
+        class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-6 p-2 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
             <input type="file" x-ref="fileInput" @change="importFile" class="hidden" accept=".xlsx,.xls">
             <button @click="$refs.fileInput.click()"
-                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">นำเข้ารายชื่อ
-                (Excel)</button>
+                class="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                นำเข้า
+            </button>
             <a href="/admin/students"
-                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">จัดการรายชื่อ</a>
+                class="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 01-6-6v6z" />
+                </svg>
+                รายชื่อ
+            </a>
             <a href="/admin/activities"
-                class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition">จัดการกิจกรรม</a>
+                class="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                กิจกรรม
+            </a>
             <a href="/admin/export"
-                class="px-3 py-1.5 rounded-full bg-rose-600 text-white hover:bg-rose-700 transition">ส่งออกข้อมูล</a>
+                class="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                ส่งออก
+            </a>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+            <template x-if="isAdmin">
+                <div class="grid grid-cols-2 sm:flex gap-2">
+                    <a href="/admin/users"
+                        class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-[11px] sm:text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Users
+                    </a>
+                    <a href="/admin/logs"
+                        class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-[11px] sm:text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Logs
+                    </a>
+                </div>
+            </template>
+
+            <div class="grid grid-cols-2 sm:flex gap-2">
+                <button @click="showPasswordModal = true"
+                    class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium border border-slate-200 dark:border-slate-700">
+                    เปลี่ยนรหัส
+                </button>
+                <button @click="logout()"
+                    class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 transition text-[11px] sm:text-xs font-medium shadow-md shadow-rose-500/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    ออกระบบ
+                </button>
+            </div>
         </div>
     </div>
 
@@ -107,6 +217,53 @@
     <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4">
         <h2 class="text-sm font-semibold mb-2">กราฟจำนวนผู้สมัครต่อกิจกรรม</h2>
         <canvas id="activityChart" class="w-full h-64"></canvas>
+    </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div x-show="showPasswordModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 py-6">
+            <div class="fixed inset-0 transition-opacity bg-slate-900/40" @click="showPasswordModal = false"></div>
+
+            <div class="relative w-full max-w-sm p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold">เปลี่ยนรหัสผ่าน</h3>
+                    <p class="text-xs text-slate-500">สำหรับบัญชีผู้ใช้ปัจจุบัน</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label
+                            class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">รหัสผ่านเดิม</label>
+                        <input type="password" x-model="passwordForm.old_password"
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">รหัสผ่านใหม่</label>
+                        <input type="password" x-model="passwordForm.new_password"
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">ยืนยันรหัสผ่านใหม่</label>
+                        <input type="password" x-model="passwordForm.confirm_password"
+                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button @click="showPasswordModal = false"
+                        class="flex-1 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800">
+                        ยกเลิก
+                    </button>
+                    <button @click="changePassword"
+                        class="flex-1 px-4 py-2 rounded-full bg-rose-600 text-white text-sm font-medium shadow-sm hover:bg-rose-700">
+                        ยืนยัน
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 {% endblock %}

@@ -66,3 +66,13 @@ async def get_current_admin(
     return admin
 
 
+async def get_current_superuser(
+    current_admin: models.Admin = Depends(get_current_admin),
+) -> models.Admin:
+    if not current_admin.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="สิทธิ์ไม่เพียงพอ"
+        )
+    return current_admin
+
+

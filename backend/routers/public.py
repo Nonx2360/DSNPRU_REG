@@ -1,10 +1,12 @@
 from typing import List
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from ..utils import log_action
 
 router = APIRouter()
 
@@ -27,7 +29,16 @@ def search_students(q: str, db: Session = Depends(get_db)):
 
 @router.get("/activities", response_model=List[schemas.Activity])
 def list_activities(db: Session = Depends(get_db)):
-    activities = db.query(models.Activity).all()
+    # Only show activities where group is visible (or no group)
+    activities = (
+        db.query(models.Activity)
+        .outerjoin(models.ActivityGroup)
+        .filter(
+            models.Activity.status == "open",
+            (models.ActivityGroup.is_visible == True) | (models.Activity.group_id == None)
+        )
+        .all()
+    )
     result = []
     for a in activities:
         registered = len(a.registrations)
@@ -39,6 +50,10 @@ def list_activities(db: Session = Depends(get_db)):
                 description=a.description,
                 max_people=a.max_people,
                 status=a.status,
+                allowed_classrooms=a.allowed_classrooms,
+                start_time=a.start_time,
+                end_time=a.end_time,
+                color=a.color,
                 group_id=a.group_id,
                 group_name=a.group.name if a.group else None,
                 registered_count=registered,
@@ -49,7 +64,7 @@ def list_activities(db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=schemas.MessageResponse)
-def register_student(payload: schemas.RegistrationCreate, db: Session = Depends(get_db)):
+def register_student(payload: schemas.RegistrationCreate, request: Request, db: Session = Depends(get_db)):
     # find student (must be imported by admin)
     student = (
         db.query(models.Student)
@@ -83,10 +98,39 @@ def register_student(payload: schemas.RegistrationCreate, db: Session = Depends(
             success=False, message="คุณได้ลงทะเบียนกิจกรรมนี้แล้ว", remaining_seats=None
         )
 
-    # 2) Quota limit check
+    # 2) Restriction checks (Classroom and Time)
+    now = datetime.now()
+
+    # Activity restrictions
+    if activity.allowed_classrooms:
+        allowed = [c.strip() for c in activity.allowed_classrooms.split(",") if c.strip()]
+        if student.classroom not in allowed:
+            return schemas.MessageResponse(
+                success=False, message=f"กิจกรรมนี้เฉพาะนักเรียนห้อง {activity.allowed_classrooms} เท่านั้น", remaining_seats=None
+            )
+    
+    if activity.start_time and now < activity.start_time:
+        return schemas.MessageResponse(
+            success=False, message=f"กิจกรรมจะเปิดให้ลงทะเบียนในวันที่ {activity.start_time.strftime('%Y-%m-%d %H:%M')}", remaining_seats=None
+        )
+    
+    if activity.end_time and now > activity.end_time:
+        return schemas.MessageResponse(
+            success=False, message="กิจกรรมนี้หมดเขตการลงทะเบียนแล้ว", remaining_seats=None
+        )
+
+    # Group restrictions
     if activity.group_id:
         group = db.query(models.ActivityGroup).filter(models.ActivityGroup.id == activity.group_id).first()
         if group:
+            if group.allowed_classrooms:
+                allowed = [c.strip() for c in group.allowed_classrooms.split(",") if c.strip()]
+                if student.classroom not in allowed:
+                    return schemas.MessageResponse(
+                        success=False, message=f"กลุ่มกิจกรรม '{group.name}' เฉพาะนักเรียนห้อง {group.allowed_classrooms} เท่านั้น", remaining_seats=None
+                    )
+            
+            # Quota limit check
             # Check how many activities in this group student already has
             count_in_group = (
                 db.query(models.Registration)
@@ -103,8 +147,6 @@ def register_student(payload: schemas.RegistrationCreate, db: Session = Depends(
                     message=f"คุณลงทะเบียนในกลุ่ม '{group.name}' ครบ {group.quota} กิจกรรมแล้ว",
                     remaining_seats=None,
                 )
-        # If group quota is NOT reached, we still allow even if total >= 3 
-        # as per user request: "if same student was got 3activity in one group they can register another with custom quota"
     else:
         # If NO GROUP, use global 3-activity limit (only counting other ungrouped activities)
         count_ungrouped = (
@@ -145,9 +187,32 @@ def register_student(payload: schemas.RegistrationCreate, db: Session = Depends(
     db.add(reg)
     db.commit()
 
+    # Log action
+    try:
+        log_action(db, f"Student: {student.number}", "REGISTER", f"Registered for '{activity.title}'", request)
+    except Exception as e:
+        print(f"Public log failed: {e}")
+
     remaining = activity.max_people - (registered_for_activity + 1)
     return schemas.MessageResponse(
         success=True, message="ลงทะเบียนสำเร็จ!", remaining_seats=max(remaining, 0)
+    )
+
+
+@router.get("/system_info", response_model=schemas.SystemInfo)
+def get_system_info(db: Session = Depends(get_db)):
+    total_students = db.query(models.Student).count()
+    total_activities = db.query(models.Activity).count()
+    total_registrations = db.query(models.Registration).count()
+    
+    return schemas.SystemInfo(
+        version="1.0.0",
+        environment="Production",
+        status="Stable",
+        total_students=total_students,
+        total_activities=total_activities,
+        total_registrations=total_registrations,
+        last_updated="Jan 2024"
     )
 
 
