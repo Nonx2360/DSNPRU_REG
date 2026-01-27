@@ -135,3 +135,7 @@ async def admin_logs_page(request: Request):
 @app.get("/admin/users")
 async def admin_users_page(request: Request):
     return templates.TemplateResponse("admin_users.html", {"request": request})
+
+@app.get("/admin/analytics")
+async def admin_analytics_page(request: Request):
+    return templates.TemplateResponse("admin_analytics.html", {"request": request})

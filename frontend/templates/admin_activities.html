@@ -58,28 +58,76 @@
                 }
             },
             async removeGroup(groupId) {
-                if (!confirm('ยืนยันการลบกลุ่ม? กิจกรรมในกลุ่มนี้จะไม่ถูกลบแต่จะไม่มีกลุ่ม')) return;
-                const token = sessionStorage.getItem('adminToken');
-                await axios.delete(`/admin/api/activity_groups/${groupId}`, {
-                    headers: { Authorization: 'Bearer ' + token }
+                const { isConfirmed } = await Swal.fire({
+                    title: 'ยืนยันการลบกลุ่ม?',
+                    text: 'กิจกรรมในกลุ่มนี้จะไม่ถูกลบแต่จะไม่มีกลุ่ม',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e11d48',
+                    confirmButtonText: 'ยืนยันการลบ',
+                    cancelButtonText: 'ยกเลิก'
                 });
-                this.groups = this.groups.filter(g => g.id !== groupId);
-                this.load(); // Refresh activities to clear group info
+                if (!isConfirmed) return;
+
+                const token = sessionStorage.getItem('adminToken');
+                try {
+                    await axios.delete(`/admin/api/activity_groups/${groupId}`, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.groups = this.groups.filter(g => g.id !== groupId);
+                    this.load(); // Refresh activities to clear group info
+                    Toastify({ text: 'ลบกลุ่มสำเร็จ', backgroundColor: '#e11d48' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถลบกลุ่มได้', 'error');
+                }
             },
             async toggle(activity) {
-                const token = sessionStorage.getItem('adminToken');
-                const res = await axios.post(`/admin/activities/${activity.id}/toggle`, {}, {
-                    headers: { Authorization: 'Bearer ' + token }
+                const action = activity.status === 'open' ? 'ปิดรับสมัคร' : 'เปิดรับสมัคร';
+                const { isConfirmed } = await Swal.fire({
+                    title: `ยืนยัน${action}?`,
+                    text: `คุณต้องการ${action}กิจกรรม "${activity.title}" ใช่หรือไม่?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: activity.status === 'open' ? '#64748b' : '#10b981',
+                    confirmButtonText: 'ยืนยัน',
+                    cancelButtonText: 'ยกเลิก'
                 });
-                const idx = this.activities.findIndex(a => a.id === activity.id);
-                if (idx !== -1) this.activities[idx] = res.data;
+                if (!isConfirmed) return;
+
+                const token = sessionStorage.getItem('adminToken');
+                try {
+                    const res = await axios.post(`/admin/activities/${activity.id}/toggle`, {}, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    const idx = this.activities.findIndex(a => a.id === activity.id);
+                    if (idx !== -1) this.activities[idx] = res.data;
+                    Toastify({ text: `เปลี่ยนสถานะเป็น ${res.data.status === 'open' ? 'เปิด' : 'ปิด'} เรียบร้อย`, backgroundColor: '#4f46e5' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
+                }
             },
             async remove(activity) {
-                const token = sessionStorage.getItem('adminToken');
-                await axios.delete(`/admin/activities/${activity.id}`, {
-                    headers: { Authorization: 'Bearer ' + token }
+                const { isConfirmed } = await Swal.fire({
+                    title: 'ยืนยันการลบกิจกรรม?',
+                    text: `ชื่อกิจกรรม: ${activity.title}\nการลบนี้จะไม่สามารถย้อนคืนได้ และข้อมูลการสมัครทั้งหมดจะหายไป`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e11d48',
+                    confirmButtonText: 'ยืนยันการลบ',
+                    cancelButtonText: 'ยกเลิก'
                 });
-                this.activities = this.activities.filter(a => a.id !== activity.id);
+                if (!isConfirmed) return;
+
+                const token = sessionStorage.getItem('adminToken');
+                try {
+                    await axios.delete(`/admin/activities/${activity.id}`, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.activities = this.activities.filter(a => a.id !== activity.id);
+                    Toastify({ text: 'ลบกิจกรรมสำเร็จ', backgroundColor: '#e11d48' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถลบกิจกรรมได้', 'error');
+                }
             }
         }));
     });
@@ -103,36 +151,39 @@
     </div>
 
     <!-- Group Manager -->
-    <div x-show="showGroupManager" x-collapse class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-xl">
-        <h2 class="text-sm font-semibold mb-3">จัดการกลุ่มกิจกรรม</h2>
+    <div x-show="showGroupManager" x-collapse
+        class="mb-6 p-4 bg-rose-50 dark:bg-slate-800/50 border border-rose-100 dark:border-rose-900/30 rounded-xl">
+        <h2 class="text-sm font-semibold mb-3 dark:text-rose-400">จัดการกลุ่มกิจกรรม</h2>
         <div class="flex flex-col gap-4 mb-4">
             <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" x-model="groupForm.name" placeholder="ชื่อกลุ่มใหม่"
-                    class="flex-1 rounded-md border-rose-200 text-sm px-3 py-1.5 focus:ring-rose-500">
+                    class="flex-1 rounded-md border-rose-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-3 py-1.5 focus:ring-rose-500">
                 <div class="flex items-center gap-2">
-                    <label class="text-[10px] text-rose-500 font-medium">โควตา:</label>
+                    <label class="text-[10px] text-rose-500 dark:text-rose-400 font-medium">โควตา:</label>
                     <input type="number" x-model.number="groupForm.quota" min="1" max="10"
-                        class="w-16 rounded-md border-rose-200 text-sm px-2 py-1.5 focus:ring-rose-500">
+                        class="w-16 rounded-md border-rose-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-2 py-1.5 focus:ring-rose-500">
                 </div>
                 <div class="flex items-center gap-2 px-2">
-                    <label class="text-[10px] text-rose-500 font-medium whitespace-nowrap">แสดงผล:</label>
+                    <label
+                        class="text-[10px] text-rose-500 dark:text-rose-400 font-medium whitespace-nowrap">แสดงผล:</label>
                     <input type="checkbox" x-model="groupForm.is_visible"
-                        class="rounded border-rose-200 text-rose-600 focus:ring-rose-500">
+                        class="rounded border-rose-200 dark:border-slate-700 text-rose-600 focus:ring-rose-500">
                 </div>
                 <button @click="createGroup"
-                    class="px-4 py-1.5 bg-rose-600 text-white rounded-md text-sm hover:bg-rose-700 whitespace-nowrap">
+                    class="px-4 py-1.5 bg-rose-600 text-white rounded-md text-sm hover:bg-rose-700 whitespace-nowrap shadow-sm">
                     เพิ่มกลุ่ม
                 </button>
             </div>
             <div class="flex flex-col gap-1">
-                <label class="text-[10px] text-rose-500 font-medium">จำกัดห้องเรียน
+                <label class="text-[10px] text-rose-500 dark:text-rose-400 font-medium">จำกัดห้องเรียน
                     (เว้นว่างหากให้เข้าได้ทุกห้อง):</label>
-                <div class="flex flex-wrap gap-2 p-2 bg-white rounded-md border border-rose-200">
+                <div
+                    class="flex flex-wrap gap-2 p-2 bg-white dark:bg-slate-900/50 rounded-md border border-rose-200 dark:border-slate-700">
                     <template x-for="cls in classrooms" :key="cls">
-                        <label class="flex items-center gap-1 text-xs cursor-pointer hover:text-rose-600">
+                        <label class="flex items-center gap-1 text-xs cursor-pointer hover:text-rose-600 transition">
                             <input type="checkbox" :value="cls" x-model="groupForm.allowed_classrooms"
-                                class="rounded border-rose-200 text-rose-600 focus:ring-rose-500">
-                            <span x-text="cls"></span>
+                                class="rounded border-rose-200 dark:border-slate-700 text-rose-600 focus:ring-rose-500">
+                            <span x-text="cls" class="dark:text-slate-300"></span>
                         </label>
                     </template>
                 </div>
@@ -140,14 +191,17 @@
         </div>
         <div class="flex flex-wrap gap-2">
             <template x-for="group in groups" :key="group.id">
-                <div class="flex items-center gap-2 px-3 py-1 bg-white border border-rose-200 rounded-full text-xs">
-                    <span x-text="group.name" class="font-medium"></span>
-                    <span class="text-[10px] text-rose-400" x-text="'(โควตา: ' + group.quota + ')'"></span>
-                    <span x-show="!group.is_visible" class="text-[10px] text-rose-300 italic">(ซ่อน)</span>
-                    <span x-show="group.allowed_classrooms" class="text-[10px] text-rose-500"
+                <div
+                    class="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 rounded-full text-xs shadow-sm">
+                    <span x-text="group.name" class="font-medium dark:text-slate-200"></span>
+                    <span class="text-[10px] text-rose-400 dark:text-rose-500"
+                        x-text="'(โควตา: ' + group.quota + ')'"></span>
+                    <span x-show="!group.is_visible"
+                        class="text-[10px] text-rose-300 dark:text-slate-500 italic">(ซ่อน)</span>
+                    <span x-show="group.allowed_classrooms" class="text-[10px] text-rose-500 dark:text-rose-400/80"
                         x-text="'[' + group.allowed_classrooms + ']'"></span>
                     <button @click="removeGroup(group.id)"
-                        class="text-rose-400 hover:text-rose-600 ml-1">&times;</button>
+                        class="text-rose-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 ml-1 transition">&times;</button>
                 </div>
             </template>
         </div>

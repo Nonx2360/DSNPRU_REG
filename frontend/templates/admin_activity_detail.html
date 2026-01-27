@@ -14,9 +14,25 @@
                 });
                 this.registrations = res.data;
                 this.$nextTick(() => {
-                    if ($('#regTable').length) {
-                        $('#regTable').DataTable();
+                    if ($.fn.DataTable.isDataTable('#regTable')) {
+                        $('#regTable').DataTable().destroy();
                     }
+                    setTimeout(() => {
+                        const table = $('#regTable').DataTable({
+                            language: {
+                                search: "ค้นหา:",
+                                lengthMenu: "แสดง _MENU_ รายการ",
+                                info: "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+                                paginate: {
+                                    first: "หน้าแรก",
+                                    last: "หน้าสุดท้าย",
+                                    next: "ถัดไป",
+                                    previous: "ก่อนหน้า"
+                                },
+                                zeroRecords: "ไม่พบข้อมูล"
+                            }
+                        });
+                    }, 50);
                 });
             },
             async exportExcel() {

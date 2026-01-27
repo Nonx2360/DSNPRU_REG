@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}สถิติและการวิเคราะห์ - DSNPRU_REG{% endblock %}
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('analyticsPage', () => ({
+            data: null,
+            charts: {
+                trend: null,
+                groups: null,
+                classrooms: null
+            },
+            async load() {
+                const token = sessionStorage.getItem('adminToken');
+                if (!token) {
+                    window.location.href = '/admin/login';
+                    return;
+                }
+
+                try {
+                    const res = await axios.get('/admin/api/analytics', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    this.data = res.data;
+                    this.renderCharts();
+                } catch (e) {
+                    console.error('Analytics load failed', e);
+                }
+            },
+            renderCharts() {
+                this.$nextTick(() => {
+                    this.renderTrendChart();
+                    this.renderGroupChart();
+                    this.renderClassChart();
+                });
+            },
+            renderTrendChart() {
+                const ctx = document.getElementById('trendChart');
+                if (!ctx) return;
+
+                if (this.charts.trend) this.charts.trend.destroy();
+
+                this.charts.trend = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: this.data.trend.map(d => d.date),
+                        datasets: [{
+                            label: 'จำนวนการลงทะเบียนรายวัน',
+                            data: this.data.trend.map(d => d.count),
+                            borderColor: '#e11d48',
+                            backgroundColor: 'rgba(225, 29, 72, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+            },
+            renderGroupChart() {
+                const ctx = document.getElementById('groupChart');
+                if (!ctx) return;
+
+                if (this.charts.groups) this.charts.groups.destroy();
+
+                this.charts.groups = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: this.data.groups.map(g => g.name),
+                        datasets: [{
+                            data: this.data.groups.map(g => g.count),
+                            backgroundColor: [
+                                '#e11d48', '#4f46e5', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                        }
+                    }
+                });
+            },
+            renderClassChart() {
+                const ctx = document.getElementById('classChart');
+                if (!ctx) return;
+
+                if (this.charts.classrooms) this.charts.classrooms.destroy();
+
+                this.charts.classrooms = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: this.data.classrooms.map(c => c.classroom),
+                        datasets: [{
+                            label: 'จำนวนนักเรียน',
+                            data: this.data.classrooms.map(c => c.count),
+                            backgroundColor: '#4f46e5'
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            },
+            init() {
+                this.load();
+                // Real-time update every 30 seconds
+                setInterval(() => this.load(), 30000);
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="analyticsPage()">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-semibold">สถิติและการวิเคราะห์</h1>
+            <p class="text-xs text-slate-500 mt-1">ข้อมูลเชิงลึกการลงทะเบียน (อัปเดตเรียลไทม์ทุก 30 วินาที)</p>
+        </div>
+        <a href="/admin/dashboard"
+            class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium hover:bg-slate-200 transition">
+            กลับหน้าแดชบอร์ด
+        </a>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Trend Chart -->
+        <div
+            class="lg:col-span-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5">
+            <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-rose-500 rounded-full"></span>
+                แนวโน้มการลงทะเบียนรายวัน
+            </h2>
+            <div class="h-64">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Group Popularity -->
+        <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5">
+            <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                ความนิยมตามกลุ่มกิจกรรม
+            </h2>
+            <div class="h-64">
+                <canvas id="groupChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Classroom Stats -->
+        <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-5">
+            <h2 class="text-sm font-semibold mb-4 flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-emerald-500 rounded-full"></span>
+                อันดับห้องเรียนที่ลงทะเบียนมากที่สุด
+            </h2>
+            <div class="h-64">
+                <canvas id="classChart"></canvas>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

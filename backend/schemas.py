@@ -171,3 +171,21 @@ class SystemInfo(BaseModel):
     total_activities: int
     total_registrations: int
     last_updated: str
+
+
+class TrendPoint(BaseModel):
+    date: str
+    count: int
+
+class GroupStat(BaseModel):
+    name: str
+    count: int
+
+class ClassStat(BaseModel):
+    classroom: str
+    count: int
+
+class AnalyticsData(BaseModel):
+    trend: List[TrendPoint]
+    groups: List[GroupStat]
+    classrooms: List[ClassStat]

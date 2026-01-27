@@ -70,6 +70,12 @@
             },
             init() {
                 this.loadActivities();
+                // Real-time: Refresh seat counts every 10 seconds
+                setInterval(async () => {
+                    const res = await axios.get('/api/activities');
+                    // Update activities list directly (Alpine will reactively update counts)
+                    this.activities = res.data;
+                }, 10000);
             }
         }));
     });

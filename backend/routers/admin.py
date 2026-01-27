@@ -423,6 +423,56 @@ def dashboard_stats(
     )
 
 
+@router.get("/api/analytics", response_model=schemas.AnalyticsData)
+def analytics_data(
+    db: Session = Depends(get_db), admin: models.Admin = Depends(get_current_admin)
+):
+    from sqlalchemy import func
+    
+    # 1. Trend: Registrations per day (last 14 days)
+    # Note: SQLite date() function for grouping
+    trend_query = (
+        db.query(func.date(models.Registration.timestamp).label("date"), func.count(models.Registration.id).label("count"))
+        .group_by("date")
+        .order_by("date")
+        .limit(14)
+        .all()
+    )
+    trend = [schemas.TrendPoint(date=r.date, count=r.count) for r in trend_query]
+
+    # 2. Popularity by Group
+    group_query = (
+        db.query(models.ActivityGroup.name, func.count(models.Registration.id).label("count"))
+        .join(models.Activity, models.Activity.group_id == models.ActivityGroup.id)
+        .join(models.Registration, models.Registration.activity_id == models.Activity.id)
+        .group_by(models.ActivityGroup.name)
+        .all()
+    )
+    # Also count activities with NO group
+    ungrouped_count = (
+        db.query(func.count(models.Registration.id))
+        .join(models.Activity, models.Registration.activity_id == models.Activity.id)
+        .filter(models.Activity.group_id == None)
+        .scalar()
+    )
+    groups = [schemas.GroupStat(name=r.name, count=r.count) for r in group_query]
+    if ungrouped_count:
+        groups.append(schemas.GroupStat(name="General", count=ungrouped_count))
+
+    # 3. Classroom Stats (Registered count per class)
+    class_query = (
+        db.query(models.Student.classroom, func.count(models.Registration.id).label("count"))
+        .join(models.Registration, models.Registration.student_id == models.Student.id)
+        .group_by(models.Student.classroom)
+        .order_by(func.count(models.Registration.id).desc())
+        .limit(10)
+        .all()
+    )
+    classrooms = [schemas.ClassStat(classroom=r.classroom or "N/A", count=r.count) for r in class_query]
+
+    return schemas.AnalyticsData(trend=trend, groups=groups, classrooms=classrooms)
+
+
 @router.post("/api/import_students", response_model=schemas.MessageResponse)
 def import_students(
     request: Request,

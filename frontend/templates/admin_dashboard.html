@@ -51,6 +51,11 @@
                     }
                 });
             },
+            init() {
+                this.load();
+                // Real-time: Refresh dashboard stats every 30 seconds
+                setInterval(() => this.load(), 30000);
+            },
             async importFile(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -138,6 +143,15 @@
                 </svg>
                 นำเข้า
             </button>
+            <a href="/admin/analytics"
+                class="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                สถิติ
+            </a>
             <a href="/admin/students"
                 class="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24"
