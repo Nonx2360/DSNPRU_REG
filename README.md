@@ -39,7 +39,8 @@ The student-facing side is designed for ease of use and quick access information
 - **Activity Browser**: View all available activities with descriptions, remaining seats, and schedules.
 - **Real-time Status**: Clearly see which activities are Open or Closed.
 - **Responsive Design**: Works perfectly on mobile phones, tablets, and desktop computers.
-- **Clickable Branding**: The navigation bar logo and title now link directly back to the main registration page.
+- **Clickable Branding**: The navigation bar logo and title link directly back to the main registration page.
+- **Real-time Seat Counts**: Activity seat counts update automatically every 10 seconds without page refresh.
 
 ### Admin Dashboard & Management
 
@@ -73,6 +74,11 @@ A comprehensive backend for school staff, accessed via a **hidden login portal**
     - **Student Management**: Import, Update, Delete, and Bulk operations.
     - **Student Actions**: Student registrations are logged with timestamps.
 - **Log Viewer**: Superusers can view the full event history in the "Logs" tab of the dashboard.
+
+**Analytics & Insights (V2.5)**
+- **Advanced Dashboard**: Visual charts showing registration trends, group popularity, and classroom participation.
+- **Real-time Updates**: Data on the dashboard and analytics page refreshes every 30 seconds.
+- **Interactive Visualizations**: Powered by Chart.js for beautiful, responsive data insights.
 
 **Registration Tracking**
 - **Live Monitoring**: See incoming registrations in real-time.
@@ -353,6 +359,25 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 - `details`: String (Contextual info)
 - `ip_address`: String (Client IP)
 - `timestamp`: DateTime
+
+---
+
+## Version History
+
+### V2.5 (Current)
+- **Analytics Dashboard**: Added a dedicated page with 3 major charts:
+    - Daily Registration Trend (Line Chart)
+    - Activity Group Popularity (Doughnut Chart)
+    - Top Classroom Participation (Horizontal Bar Chart)
+- **Real-time Synchronization**: Implemented background polling for student registration (10s) and admin analytics (30s).
+- **SweetAlert2 Integration**: Added professional confirmation dialogs for all destructive admin actions.
+- **Theme Polish**: Improved Group Manager UI visibility in Dark Mode.
+- **Bug Fixes**: Resolved DataTables initialization race condition on the Activity Detail page.
+
+### V2.0
+- **RBAC**: Implemented Role-Based Access Control (Admin vs Staff).
+- **Audit Logs**: Comprehensive logging system for all administrative actions.
+- **Enhanced Security**: JWT-based authentication and secure password hashing.
 
 ---
 
