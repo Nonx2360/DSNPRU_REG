@@ -1,6 +1,6 @@
 # DSNPRU_REG - School Activity Registration System
 
-**Version 3.0**
+**Version 3.1.5**
 
 A comprehensive web-based activity registration system designed for schools. It allows students to view and register for activities, while providing administrators with powerful tools to manage activities, students, and registration data. Built with **FastAPI** for high performance and **Alpine.js** for a responsive, modern frontend.
 
@@ -272,13 +272,18 @@ pip install -r requirements.txt
 If upgrading from a previous version, run the migration script to add new columns:
 
 ```bash
+# Old migration
 python migrate_db.py
+
+# New migration for sequence_number (V3.1.5)
+python migrate_db_v2.py
 ```
 
 This will add:
 - `type` column to `activities` table (individual/team)
 - `max_team_size` column to `activities` table
 - `team_name` column to `registrations` table
+- `sequence_number` column to `students` table (V3.1.5)
 
 ### Step 5: Run the Server
 
@@ -318,7 +323,8 @@ The system uses `sql_app.db` (SQLite) created automatically in the root director
 3.  **Manage Students**:
     - Go to "Student Management".
     - Click "Import (Excel)" to upload your student list.
-    - Format: `Number`, `Name`, `Classroom` columns.
+    - **V3.1.5 Format (6 columns)**: `รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`.
+    - Supports both old (5-column) and new (6-column) formats automatically.
 4.  **Create Activities**:
     - Go to "Manage Activities".
     - Click "New Activity" or use "Group Manager" to create quotas for sets of activities.
@@ -406,6 +412,7 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 - `name`: String, Student Name
 - `number`: String, Student ID Number (e.g., 64001)
 - `classroom`: String, Class (e.g., M.6/1)
+- `sequence_number`: String, Class number (e.g., 1) **[NEW V3.1.5]**
 
 **activities**
 - `id`: Integer, Primary Key
@@ -452,7 +459,16 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 
 ## Version History
 
-### V3.0 (Current)
+### V3.1.5 (Current)
+
+**New Student Identification System**
+- **Sequence Number (เลขที่)**: Added a dedicated field to distinguish between Student ID (รหัส) and Class Number (เลขที่).
+- **New Excel Import Format**: Supports a 6-column format (`รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`).
+- **Enhanced Exports**: Registration lists (Excel/PDF) and Student lists now include the "เลขที่" column.
+- **Improved Student Management**: Admins can view and edit the "เลขที่" field directly in the dashboard.
+- **Contact Info Update**: Updated developer contact information in the "About" page.
+
+### V3.0
 
 **Team Registration System**
 - **Activity Types**: Activities can now be configured as "Individual" or "Team/Partner".
