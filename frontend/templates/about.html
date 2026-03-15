@@ -56,30 +56,40 @@
                     </div>
                 </div>
 
-                <div class="grid sm:grid-cols-2 gap-3 mt-6">
+                <div class="grid sm:grid-cols-2 gap-4 mt-6">
                     <div
-                        class="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-emerald-200 transition-colors group">
-                        <svg class="w-5 h-5 text-emerald-500 group-hover:scale-110 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
+                        class="flex flex-col gap-3 p-5 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-emerald-200 transition-colors group">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-500 group-hover:scale-110 transition-transform" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
                         <div class="flex flex-col">
-                            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">Real-time</span>
-                            <span class="text-[10px] text-slate-500">ทราบผลทันทีที่กดเลือก</span>
+                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">Real-time
+                                Feedback</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">ทราบผลทันทีที่กดเลือก
+                                ไม่ต้องรอลุ้น</span>
                         </div>
                     </div>
                     <div
-                        class="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-blue-200 transition-colors group">
-                        <svg class="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
-                            </path>
-                        </svg>
+                        class="flex flex-col gap-3 p-5 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 hover:border-blue-200 transition-colors group">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                                </path>
+                            </svg>
+                        </div>
                         <div class="flex flex-col">
-                            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">Secure</span>
-                            <span class="text-[10px] text-slate-500">ข้อมูลปลอดภัย ตรวจสอบได้</span>
+                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">Secure
+                                Tracking</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">ข้อมูลปลอดภัย
+                                ตรวจสอบโควตาได้ตลอด</span>
                         </div>
                     </div>
                 </div>
@@ -194,7 +204,7 @@
 
                 <div
                     class="px-5 py-3 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                    <span class="text-[10px] text-slate-400 font-mono" x-text="'v' + info.version">v1.0.0</span>
+                    <span class="text-[10px] text-slate-400 font-mono" x-text="'v' + info.version">v3.0.6</span>
                     <span class="text-[10px] text-slate-400">Updates every 10m</span>
                 </div>
             </div>

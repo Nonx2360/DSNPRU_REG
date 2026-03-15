@@ -9,10 +9,11 @@ class Student(Base):
     __tablename__ = "students"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False)
-    classroom = Column(String, index=True, nullable=True)  # 'class' reserved in Python
-    number = Column(String, nullable=False)
-
+    number = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, nullable=False)
+    classroom = Column(String, nullable=True) # e.g. "ม.1/1"
+    sequence = Column(Integer, nullable=True) # e.g. 1, 2, 3 (เลขที่)
+    
     registrations = relationship("Registration", back_populates="student", cascade="all, delete-orphan")
 
 
@@ -40,6 +41,11 @@ class Activity(Base):
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)
     color = Column(String, default="#e11d48") # Default rose-600 hex
+    
+    # New fields for Team Registration
+    type = Column(String, default="individual") # individual / team
+    max_team_size = Column(Integer, default=1)
+    
     group_id = Column(Integer, ForeignKey("activity_groups.id"), nullable=True)
 
     group = relationship("ActivityGroup", back_populates="activities")
@@ -55,6 +61,7 @@ class Registration(Base):
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
     activity_id = Column(Integer, ForeignKey("activities.id"), nullable=False)
+    team_name = Column(String, nullable=True) # New field for Team Registration
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     student = relationship("Student", back_populates="registrations")

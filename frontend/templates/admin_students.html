@@ -7,7 +7,7 @@
             students: [],
             searchQuery: '',
             editingStudent: null,
-            editForm: { name: '', number: '', classroom: '' },
+            editForm: { name: '', number: '', classroom: '', sequence: '' },
             selectedIds: [],
             async load() {
                 const token = sessionStorage.getItem('adminToken');
@@ -96,13 +96,19 @@
                 this.editForm = {
                     name: student.name,
                     number: student.number,
-                    classroom: student.classroom || ''
+                    classroom: student.classroom || '',
+                    sequence: student.sequence || ''
                 };
             },
             async saveEdit() {
                 const token = sessionStorage.getItem('adminToken');
                 try {
-                    const res = await axios.put(`/admin/api/students/${this.editingStudent.id}`, this.editForm, {
+                    // Convert sequence to int if present
+                    const payload = { ...this.editForm };
+                    if (payload.sequence) payload.sequence = parseInt(payload.sequence);
+                    else payload.sequence = null;
+
+                    const res = await axios.put(`/admin/api/students/${this.editingStudent.id}`, payload, {
                         headers: { Authorization: 'Bearer ' + token }
                     });
                     const idx = this.students.findIndex(s => s.id === this.editingStudent.id);
@@ -168,8 +174,8 @@
         </div>
         <div class="flex flex-wrap gap-2 text-[11px] sm:text-xs">
             <button @click="exportStudentsExcel"
-                class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 transition shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                class="px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 transition font-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -177,8 +183,8 @@
                 Export Excel
             </button>
             <button @click="exportStudentsPdf"
-                class="px-3 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 transition shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                class="px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 flex items-center gap-1.5 transition font-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -188,7 +194,7 @@
                 Export PDF
             </button>
             <a href="/admin/dashboard"
-                class="px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition">กลับแดชบอร์ด</a>
+                class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition flex items-center">กลับแดชบอร์ด</a>
         </div>
     </div>
 
@@ -208,37 +214,41 @@
     </div>
 
     <div
-        class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden relative">
+        class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden relative shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left whitespace-nowrap lg:whitespace-normal">
-                <thead class="bg-slate-50 dark:bg-slate-800 text-xs font-medium uppercase text-slate-500">
+                <thead class="bg-slate-50/50 dark:bg-slate-800/50 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                     <tr>
-                        <th class="px-4 py-3 w-10">
+                        <th class="px-5 py-4 w-10">
                             <input type="checkbox" @change="toggleSelectAll"
                                 :checked="selectedIds.length === filteredStudents.length && filteredStudents.length > 0"
-                                class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                class="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer">
                         </th>
-                        <th class="px-4 py-3">รหัสนักเรียน</th>
-                        <th class="px-4 py-3">ชื่อ-นามสกุล</th>
-                        <th class="px-4 py-3">ห้อง</th>
-                        <th class="px-4 py-3 text-right">จัดการ</th>
+                        <th class="px-5 py-4">รหัสนักเรียน</th>
+                        <th class="px-5 py-4">ชื่อ-นามสกุล</th>
+                        <th class="px-5 py-4">ห้อง</th>
+                        <th class="px-5 py-4">เลขที่</th>
+                        <th class="px-5 py-4 text-right">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     <template x-for="student in filteredStudents" :key="student.id">
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition"
                             :class="selectedIds.includes(student.id) ? 'bg-rose-50/50 dark:bg-rose-900/10' : ''">
-                            <td class="px-4 py-3">
+                            <td class="px-5 py-3">
                                 <input type="checkbox" :checked="selectedIds.includes(student.id)"
                                     @change="toggleSelect(student.id)"
-                                    class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                    class="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer">
                             </td>
-                            <td class="px-4 py-3 font-mono text-xs" x-text="student.number"></td>
-                            <td class="px-4 py-3 font-medium" x-text="student.name"></td>
-                            <td class="px-4 py-3 text-slate-500" x-text="student.classroom || '-'"></td>
-                            <td class="px-4 py-3 text-right space-x-1">
+                            <td class="px-5 py-3 font-mono text-xs text-slate-600 dark:text-slate-400" x-text="student.number"></td>
+                            <td class="px-5 py-3 font-semibold text-slate-800 dark:text-slate-200" x-text="student.name"></td>
+                            <td class="px-5 py-3 text-slate-500 dark:text-slate-400">
+                                <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-medium" x-text="student.classroom || '-'"></span>
+                            </td>
+                            <td class="px-5 py-3 text-slate-500 dark:text-slate-400" x-text="student.sequence || '-'"></td>
+                            <td class="px-5 py-3 text-right space-x-1">
                                 <button @click="editStudent(student)"
-                                    class="p-1.5 text-slate-400 hover:text-rose-600 transition">
+                                    class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition" title="แก้ไข">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -246,7 +256,7 @@
                                     </svg>
                                 </button>
                                 <button @click="removeStudent(student)"
-                                    class="p-1.5 text-slate-400 hover:text-rose-600 transition">
+                                    class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition" title="ลบ">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -257,7 +267,7 @@
                         </tr>
                     </template>
                     <tr x-show="filteredStudents.length === 0">
-                        <td colspan="5" class="px-4 py-8 text-center text-slate-400">
+                        <td colspan="6" class="px-4 py-8 text-center text-slate-400">
                             ไม่พบข้อมูลนักเรียน
                         </td>
                     </tr>
@@ -292,50 +302,68 @@
     </div>
     </div>
 
-    <!-- Edit Modal -->
-    <div x-show="editingStudent" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4 py-6">
-            <div class="fixed inset-0 transition-opacity bg-slate-900/40" @click="editingStudent = null"></div>
+    <!-- Edit Modal (Teleported) -->
+    <template x-teleport="body">
+        <div x-show="editingStudent" class="fixed inset-0 z-[100] overflow-y-auto" style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4 pb-20 pt-4 text-center sm:p-0">
+                <div class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" x-transition.opacity @click="editingStudent = null"></div>
 
-            <div class="relative w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl">
-                <div class="mb-4">
-                    <h3 class="text-lg font-semibold">แก้ไขข้อมูลนักเรียน</h3>
-                    <p class="text-xs text-slate-500">รหัส ID: <span x-text="editingStudent?.id"></span></p>
-                </div>
+                <div class="relative w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl text-left transform transition-all sm:my-8" x-transition.scale.origin.bottom>
+                    <div class="mb-6 flex items-center gap-3">
+                        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">แก้ไขข้อมูลนักเรียน</h3>
+                            <p class="text-xs text-slate-500 font-mono">รหัส ID: <span x-text="editingStudent?.id"></span></p>
+                        </div>
+                    </div>
 
-                <div class="space-y-4">
-                    <div>
-                        <label
-                            class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">รหัสนักเรียน</label>
-                        <input type="text" x-model="editForm.number"
-                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
+                    <div class="space-y-4">
+                        <div>
+                            <label
+                                class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 opacity-80">รหัสนักเรียน</label>
+                            <input type="text" x-model="editForm.number"
+                                class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 opacity-80">ชื่อ-นามสกุล</label>
+                            <input type="text" x-model="editForm.name"
+                                class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 opacity-80">ห้อง
+                                    (ถ้ามี)</label>
+                                <input type="text" x-model="editForm.classroom"
+                                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 opacity-80">เลขที่
+                                    (ถ้ามี)</label>
+                                <input type="number" x-model="editForm.sequence"
+                                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label
-                            class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">ชื่อ-นามสกุล</label>
-                        <input type="text" x-model="editForm.name"
-                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">ห้อง
-                            (ถ้ามี)</label>
-                        <input type="text" x-model="editForm.classroom"
-                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
-                    </div>
-                </div>
 
-                <div class="mt-6 flex gap-3">
-                    <button @click="editingStudent = null"
-                        class="flex-1 px-4 py-2 rounded-full border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800">
-                        ยกเลิก
-                    </button>
-                    <button @click="saveEdit"
-                        class="flex-1 px-4 py-2 rounded-full bg-rose-600 text-white text-sm font-medium shadow-sm hover:bg-rose-700">
-                        บันทึก
-                    </button>
+                    <div class="mt-8 flex gap-3">
+                        <button @click="editingStudent = null"
+                            class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                            ยกเลิก
+                        </button>
+                        <button @click="saveEdit"
+                            class="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-bold shadow-md shadow-rose-500/20 hover:bg-rose-700 active:scale-95 transition">
+                            บันทึก
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </template>
 </section>
 {% endblock %}

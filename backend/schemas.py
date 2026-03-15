@@ -8,6 +8,7 @@ class StudentBase(BaseModel):
     name: str = Field(..., example="สมชาย ใจดี")
     classroom: Optional[str] = Field(None, example="ม.3/1")
     number: str = Field(..., example="15")
+    sequence: Optional[int] = Field(None, example=1)
 
 
 class StudentCreate(StudentBase):
@@ -52,6 +53,9 @@ class ActivityBase(BaseModel):
     end_time: Optional[datetime] = None
     color: str = "#e11d48"
     group_id: Optional[int] = None
+    # New fields for V3
+    type: str = "individual"
+    max_team_size: int = 1
 
 
 class ActivityCreate(ActivityBase):
@@ -68,6 +72,9 @@ class ActivityUpdate(BaseModel):
     end_time: Optional[datetime] = None
     color: Optional[str] = None
     group_id: Optional[int] = None
+    # New fields for V3
+    type: Optional[str] = None
+    max_team_size: Optional[int] = None
 
 
 class Activity(ActivityBase):
@@ -89,14 +96,24 @@ class RegistrationCreate(BaseModel):
     classroom: str
     number: str
     activity_id: int
+    # New fields for V3
+    team_name: Optional[str] = None
+    partner_numbers: Optional[List[str]] = []
 
 
 class Registration(RegistrationBase):
     id: int
     timestamp: datetime
-    student: Student
+    # activity: Optional[Activity] = None  <-- This might cause circular import issues if not careful, but Pydantic handles it. 
+    # Actually, in schemas.py, Activity is defined above.
+    activity: Optional[Activity] = None
+    student: Optional[Student] = None
 
     model_config = {"from_attributes": True}
+
+class CancelRequest(BaseModel):
+    number: str
+    activity_id: int
 
 
 class AdminBase(BaseModel):

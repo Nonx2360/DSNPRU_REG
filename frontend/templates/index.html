@@ -7,9 +7,24 @@
 
         Alpine.data('registrationPage', () => ({
             activities: [],
-            form: { name: '', classroom: '', number: '', activity_id: null },
+            form: { name: '', classroom: '', number: '', activity_id: null, sequence: '' },
             searchQuery: '',
             searchResults: [],
+
+            // Tabs
+            currentTab: 'register',
+
+            // My Registrations State
+            myRegNumber: '',
+            myRegistrations: null,
+            loadingRegs: false,
+
+            // Team Registration State
+            selectedActivity: null,
+            teamName: '',
+            applyAlone: false,
+            partners: [], // Array of { number: '', name: '', query: '', results: [] }
+
             async searchStudents() {
                 if (this.searchQuery.length < 2) {
                     this.searchResults = [];
@@ -26,9 +41,49 @@
                 this.form.name = student.name;
                 this.form.number = student.number;
                 this.form.classroom = student.classroom || '';
+                this.form.sequence = student.sequence || '';
                 this.searchQuery = `${student.number} - ${student.name}`;
                 this.searchResults = [];
             },
+
+            // Partner Search Logic
+            async searchPartner(index) {
+                const query = this.partners[index].query;
+                if (query.length < 2) {
+                    this.partners[index].results = [];
+                    return;
+                }
+                try {
+                    const res = await axios.get('/api/search_students?q=' + encodeURIComponent(query));
+                    // Filter out self and already selected partners
+                    const selfNum = this.form.number;
+                    const selectedNums = this.partners.map(p => p.number).filter(n => n);
+
+                    this.partners[index].results = res.data.filter(s =>
+                        s.number !== selfNum &&
+                        !selectedNums.includes(s.number)
+                    );
+                } catch (e) {
+                    console.error('Partner search error', e);
+                }
+            },
+            selectPartner(index, student) {
+                this.partners[index].name = student.name;
+                this.partners[index].number = student.number;
+                this.partners[index].query = `${student.number} - ${student.name}`;
+                this.partners[index].results = [];
+            },
+            removePartner(index) {
+                this.partners.splice(index, 1);
+            },
+            addPartner() {
+                if (!this.selectedActivity) return;
+                const maxPartners = this.selectedActivity.max_team_size - 1;
+                if (this.partners.length < maxPartners) {
+                    this.partners.push({ number: '', name: '', query: '', results: [] });
+                }
+            },
+
             async loadActivities() {
                 const res = await axios.get('/api/activities');
                 this.activities = res.data;
@@ -48,18 +103,53 @@
                     return;
                 }
                 this.form.activity_id = activity.id;
+                this.selectedActivity = activity;
+
+                // Reset team state
+                this.partners = [];
+                this.teamName = '';
+                this.applyAlone = false;
+
+                // Pre-fill one partner slot if it's a team activity
+                if (activity.type === 'team' && activity.max_team_size > 1) {
+                    this.partners.push({ number: '', name: '', query: '', results: [] });
+                }
             },
             async submit() {
                 if ((!this.form.name && !this.form.number) || !this.form.activity_id) {
                     Swal.fire('กรุณากรอกข้อมูลให้ครบ', 'ต้องระบุชื่อ-สกุล หรือ เลขประจำตัวนักเรียน อย่างใดอย่างหนึ่ง', 'warning');
                     return;
                 }
+
+                // Prepare Payload
+                const payload = {
+                    ...this.form,
+                    team_name: this.teamName,
+                    partner_numbers: []
+                };
+
+                // Validate Team Logic
+                if (this.selectedActivity && this.selectedActivity.type === 'team' && !this.applyAlone) {
+                    const filledPartners = this.partners.filter(p => p.number);
+                    if (filledPartners.length === 0 && this.selectedActivity.max_team_size > 1) {
+                        // Decide: Is at least one partner required? 
+                        // If "Apply Alone" is NOT checked, maybe warn?
+                        // Let's allow submitting with 0 partners if they just didn't add any, effectively applying alone.
+                        // But if they added slots and left them empty?
+                        // Let's just take valid ones.
+                    }
+                    payload.partner_numbers = filledPartners.map(p => p.number);
+                }
+
                 try {
-                    const res = await axios.post('/api/register', this.form);
+                    const res = await axios.post('/api/register', payload);
                     const data = res.data;
                     if (data.success) {
                         Swal.fire('สำเร็จ', data.message, 'success');
                         this.form.activity_id = null;
+                        this.selectedActivity = null;
+                        this.partners = [];
+                        this.teamName = '';
                         await this.loadActivities();
                     } else {
                         Swal.fire('ไม่สามารถลงทะเบียนได้', data.message, 'error');
@@ -68,6 +158,59 @@
                     Swal.fire('ผิดพลาด', 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', 'error');
                 }
             },
+
+            async loadMyRegistrations() {
+                if (this.myRegNumber.length < 3) {
+                    Swal.fire('แจ้งเตือน', 'กรุณากรอกเลขประจำตัวให้ถูกต้อง', 'warning');
+                    return;
+                }
+                this.loadingRegs = true;
+                this.myRegistrations = null;
+                try {
+                    const res = await axios.get('/api/my_registrations?number=' + encodeURIComponent(this.myRegNumber));
+                    this.myRegistrations = res.data;
+                } catch (e) {
+                    this.myRegistrations = []; // Not found or error
+                    if (e.response && e.response.status === 404) {
+                        // Just show empty
+                    } else {
+                        console.error(e);
+                    }
+                } finally {
+                    this.loadingRegs = false;
+                }
+            },
+            async cancelRegistration(reg) {
+                const { isConfirmed } = await Swal.fire({
+                    title: 'ยืนยันการยกเลิก?',
+                    text: `คุณต้องการยกเลิกการลงทะเบียน "${reg.activity.title}" ใช่หรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e11d48',
+                    confirmButtonText: 'ยืนยันการยกเลิก',
+                    cancelButtonText: 'ไม่, ยกเลิก'
+                });
+
+                if (!isConfirmed) return;
+
+                try {
+                    const res = await axios.post('/api/cancel_registration', {
+                        number: this.myRegNumber,
+                        activity_id: reg.activity_id
+                    });
+
+                    if (res.data.success) {
+                        Swal.fire('สำเร็จ', res.data.message, 'success');
+                        this.loadMyRegistrations(); // Refresh list
+                        this.loadActivities(); // Refresh global counts
+                    } else {
+                        Swal.fire('ไม่สำเร็จ', res.data.message, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถยกเลิกได้', 'error');
+                }
+            },
+
             init() {
                 this.loadActivities();
                 // Real-time: Refresh seat counts every 10 seconds
@@ -75,6 +218,12 @@
                     const res = await axios.get('/api/activities');
                     // Update activities list directly (Alpine will reactively update counts)
                     this.activities = res.data;
+
+                    // Update selected activity object if it exists
+                    if (this.selectedActivity) {
+                        const updated = this.activities.find(a => a.id === this.selectedActivity.id);
+                        if (updated) this.selectedActivity = updated;
+                    }
                 }, 10000);
             }
         }));
@@ -82,132 +231,371 @@
 </script>
 {% endblock %}
 {% block content %}
-<section x-data="registrationPage()">
-    <h1 class="text-2xl font-semibold mb-4">ลงทะเบียนเข้าร่วมกิจกรรม DSNPRU</h1>
-    <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">
-        กรุณากรอกข้อมูลให้ครบถ้วน และเลือกกิจกรรมที่ต้องการเข้าร่วม (ไม่เกิน 3 กิจกรรมต่อคน)
-    </p>
+<section x-data="registrationPage()" class="py-2">
+    <div class="mb-8">
+        <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">ลงทะเบียนเข้าร่วมกิจกรรม</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            กรุณากรอกข้อมูลให้ครบถ้วน และเลือกกิจกรรมที่ต้องการเข้าร่วม (ไม่เกิน 3 กิจกรรมต่อคน)
+        </p>
+    </div>
 
-    <div class="grid lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-1 space-y-4">
-            <div
-                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm">
-                <h2 class="text-base font-semibold mb-4 border-b pb-2 flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-rose-500 rounded-full"></span>
-                    ระบุตัวตนของคุณ
-                </h2>
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-8 border-b border-slate-200 dark:border-slate-800">
+        <button @click="currentTab = 'register'" class="px-4 py-2.5 text-sm font-semibold transition-all relative rounded-t-lg -mb-px"
+            :class="currentTab === 'register' ? 'text-rose-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-b-white dark:border-b-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'">
+            ลงทะเบียนกิจกรรม
+        </button>
+        <button @click="currentTab = 'my_registrations'" class="px-4 py-2.5 text-sm font-semibold transition-all relative rounded-t-lg -mb-px"
+            :class="currentTab === 'my_registrations' ? 'text-rose-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-b-white dark:border-b-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'">
+            ตรวจสอบข้อมูล / ยกเลิก
+        </button>
+    </div>
 
-                <div class="relative">
-                    <label class="block text-xs font-medium text-slate-500 mb-1.5">ค้นหาด้วย ชื่อ หรือ
-                        รหัสนักเรียน</label>
-                    <div class="relative">
-                        <input type="text" x-model="searchQuery" @input.debounce.300ms="searchStudents"
-                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-inner"
-                            placeholder="พิมพ์ชื่อหรือรหัสเพื่อค้นหา...">
-                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    <!-- Register Tab -->
+    <div x-show="currentTab === 'register'" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="grid lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden sticky top-24">
+                    <div class="p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50">
+                        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 text-rose-500">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                             </svg>
+                            โปรไฟล์นักเรียน
+                        </h2>
+                    </div>
+
+                    <div class="p-5 space-y-5">
+                        <div class="relative">
+                            <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">ค้นหานักเรียน</label>
+                            <div class="relative">
+                                <input type="text" x-model="searchQuery" @input.debounce.300ms="searchStudents"
+                                    class="w-full rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 transition shadow-sm placeholder:text-slate-400"
+                                    placeholder="พิมพ์ชื่อ หรือ รหัสนักเรียน...">
+                                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Search Results Dropdown -->
+                            <div x-show="searchResults.length > 0" x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="opacity-0 translate-y-1"
+                                x-transition:enter-end="opacity-100 translate-y-0"
+                                @click.away="searchResults = []"
+                                class="absolute z-10 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                                <template x-for="student in searchResults" :key="student.id">
+                                    <button @click="selectStudent(student)"
+                                        class="w-full text-left px-4 py-3 text-sm hover:bg-rose-50 dark:hover:bg-rose-900/20 border-b border-slate-50 dark:border-slate-700/50 last:border-0 transition flex flex-col gap-0.5">
+                                        <span class="font-medium text-slate-900 dark:text-slate-100"
+                                            x-text="student.name"></span>
+                                        <span class="text-xs text-slate-500"
+                                            x-text="'รหัส: ' + student.number + (student.sequence ? ' · เลขที่: ' + student.sequence : '')"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- ID Card Display -->
+                        <div class="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-all"
+                            :class="form.number ? 'ring-1 ring-inset ring-rose-500/20 border-rose-200 dark:border-rose-900/50 bg-rose-50/30 dark:bg-rose-900/10' : ''">
+                            
+                            <!-- decorative corner blob -->
+                            <div class="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-rose-500/5 blur-2xl transition-opacity" :class="form.number ? 'opacity-100' : 'opacity-0'"></div>
+                            
+                            <div class="p-4 relative">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-600 transition-colors"
+                                         :class="form.number ? 'bg-rose-100 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800' : ''">
+                                        <svg x-show="!form.number" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
+                                        </svg>
+                                        <svg x-show="form.number" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-600 dark:text-rose-400" viewBox="0 0 24 24" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" x-text="form.number ? 'ยืนยันตัวตนแล้ว' : 'กรุณาเลือกนักเรียน'"></div>
+                                        <div class="text-sm font-semibold truncate text-slate-800 dark:text-slate-200" :class="form.number ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'" x-text="form.name || 'ยังไม่มีข้อมูลนักเรียน'"></div>
+                                        <div class="text-xs text-slate-500 mt-1 flex items-center gap-2" x-show="form.number">
+                                            <span class="inline-flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-slate-300"></span> รหัส: <span class="font-medium text-slate-700 dark:text-slate-300" x-text="form.number"></span></span>
+                                            <template x-if="form.sequence">
+                                                <span class="inline-flex items-center gap-1"><span class="w-1 h-1 rounded-full bg-slate-300"></span> เลขที่: <span class="font-medium text-slate-700 dark:text-slate-300" x-text="form.sequence"></span></span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Search Results Dropdown -->
-                    <div x-show="searchResults.length > 0" x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 translate-y-1"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        class="absolute z-10 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto">
-                        <template x-for="student in searchResults" :key="student.id">
-                            <button @click="selectStudent(student)"
-                                class="w-full text-left px-4 py-3 text-sm hover:bg-rose-50 dark:hover:bg-rose-900/20 border-b border-slate-50 last:border-0 transition flex flex-col gap-0.5">
-                                <span class="font-medium text-slate-900 dark:text-slate-100"
-                                    x-text="student.name"></span>
-                                <span class="text-xs text-slate-500" x-text="'รหัส: ' + student.number"></span>
-                            </button>
-                        </template>
+                    <!-- Action Button inside Left Panel Sticky block -->
+                    <div class="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                        <button type="button" @click="submit"
+                            class="w-full flex justify-center items-center gap-2 px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold shadow-md shadow-rose-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+                            :disabled="!form.activity_id || !form.number">
+                            <span>ยืนยันการลงทะเบียน</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <div
-                    class="mt-5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
-                    <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">ข้อมูลที่เลือก
-                    </div>
-                    <div class="space-y-1">
-                        <div class="text-sm font-medium" x-text="form.name || 'ยังไม่ได้เลือกนักเรียน'"></div>
-                        <div class="text-xs text-slate-500" x-show="form.number" x-text="'รหัส: ' + form.number"></div>
-                    </div>
+                <div class="hidden">
+                    <input type="text" x-model="form.number">
+                    <input type="text" x-model="form.name">
+                    <input type="text" x-model="form.classroom">
                 </div>
-
-                <p class="text-[10px] text-slate-400 mt-4 leading-relaxed italic">
-                    * กรุณาค้นหาและเลือกชื่อของคุณจากรายการที่ปรากฏ
-                </p>
             </div>
 
-            <div class="hidden">
-                <input type="text" x-model="form.number">
-                <input type="text" x-model="form.name">
-                <input type="text" x-model="form.classroom">
-            </div>
-        </div>
-
-        <div class="lg:col-span-2">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-sm font-semibold">เลือกกิจกรรม</h2>
-                <button type="button" class="text-xs text-rose-600 hover:underline" @click="loadActivities">
-                    โหลดกิจกรรมล่าสุด
-                </button>
-            </div>
-            <div class="space-y-8" id="activity-cards">
-                <template x-for="(groupActs, groupName) in groupedActivities()" :key="groupName">
-                    <div class="space-y-4">
-                        <h3 class="text-xs font-bold text-rose-600 uppercase tracking-widest flex items-center gap-2">
-                            <span class="w-2 h-2 bg-rose-500 rounded-full"></span>
-                            <span x-text="groupName"></span>
-                        </h3>
-                        <div class="grid sm:grid-cols-2 lg:grid-cols-2 gap-4">
-                            <template x-for="activity in groupActs" :key="activity.id">
-                                <button type="button" @click="selectActivity(activity)"
-                                    class="text-left rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60 p-4 shadow-sm hover:shadow-md transition group"
-                                    :class="form.activity_id === activity.id ? 'ring-2 ring-rose-500' : ''">
-                                    <div class="flex items-start justify-between gap-3 mb-2">
-                                        <div>
-                                            <div class="font-semibold text-sm" x-text="activity.title"></div>
-                                            <div class="text-xs text-slate-500 mt-1 line-clamp-2"
-                                                x-text="activity.description">
+            <div class="lg:col-span-2">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold">เลือกกิจกรรม</h2>
+                    <button type="button" class="text-xs text-rose-600 hover:underline" @click="loadActivities">
+                        โหลดกิจกรรมล่าสุด
+                    </button>
+                </div>
+                <div class="space-y-8" id="activity-cards">
+                    <template x-for="(groupActs, groupName) in groupedActivities()" :key="groupName">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <h3 class="inline-flex items-center px-3 py-1.5 bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 text-xs font-bold rounded-full uppercase tracking-wider shadow-sm border border-rose-200 dark:border-rose-800 text-balance">
+                                    <span x-text="groupName" class="truncate line-clamp-1"></span>
+                                </h3>
+                                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-700/50"></div>
+                            </div>
+                            <div class="grid sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                                <template x-for="activity in groupActs" :key="activity.id">
+                                    <button type="button" @click="selectActivity(activity)"
+                                        class="flex flex-col text-left rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm hover:shadow-md transition group relative overflow-hidden h-full"
+                                        :class="form.activity_id === activity.id ? 'ring-2 ring-inset ring-rose-500 bg-rose-50/50 dark:bg-rose-900/10' : ''">
+                                        <div class="flex items-start justify-between gap-3 mb-2 w-full">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-bold text-[15px] leading-snug group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors" x-text="activity.title"></div>
+                                                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed" x-text="activity.description"></div>
+                                            </div>
+                                            <div class="flex flex-col items-end gap-1.5 shrink-0">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-colors"
+                                                    :class="activity.status === 'open' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'">
+                                                    <span x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
+                                                </span>
+                                                <template x-if="activity.type === 'team'">
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800">
+                                                        TEAM <span x-text="'(Max ' + activity.max_team_size + ')'"></span>
+                                                    </span>
+                                                </template>
                                             </div>
                                         </div>
-                                        <span class="px-2 py-0.5 rounded-full text-[11px] font-medium"
-                                            :class="activity.status === 'open' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
-                                            <span
-                                                x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center justify-between text-xs mt-2">
-                                        <span class="text-slate-600 dark:text-slate-300">
-                                            เหลือที่นั่ง
-                                            <span class="font-semibold" x-text="activity.remaining_seats"></span>
-                                            / <span x-text="activity.max_people"></span>
-                                        </span>
-                                    </div>
-                                </button>
-                            </template>
+                                        
+                                        <!-- Progress Bar Area -->
+                                        <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800/80 w-full">
+                                            <div class="flex items-center justify-between text-[11px] mb-1.5 font-medium">
+                                                <span class="text-slate-500 dark:text-slate-400">สถานะที่นั่ง:</span>
+                                                <span :class="activity.remaining_seats <= 5 && activity.remaining_seats > 0 ? 'text-amber-600 dark:text-amber-500' : (activity.remaining_seats === 0 ? 'text-rose-600 dark:text-rose-500' : 'text-slate-700 dark:text-slate-300')">
+                                                    <span x-show="activity.remaining_seats > 0">ว่าง <span class="font-bold" x-text="activity.remaining_seats"></span><span class="text-slate-400 dark:text-slate-500 font-normal"> / <span x-text="activity.max_people"></span></span></span>
+                                                    <span x-show="activity.remaining_seats === 0" class="font-bold">เต็มแล้ว</span>
+                                                </span>
+                                            </div>
+                                            <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                <div class="h-full rounded-full transition-all duration-500"
+                                                    :style="`width: ${(1 - (activity.remaining_seats / activity.max_people)) * 100}%`"
+                                                    :class="{
+                                                        'bg-emerald-500': (activity.remaining_seats / activity.max_people) > 0.2,
+                                                        'bg-amber-500': (activity.remaining_seats / activity.max_people) <= 0.2 && activity.remaining_seats > 0,
+                                                        'bg-rose-500': activity.remaining_seats === 0
+                                                    }">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </template>
+                </div>
+            </div>
+            </template>
+        </div>
+    </div>
+    </div>
+
+    <!-- Team Registration Form -->
+    <div x-show="selectedActivity && selectedActivity.type === 'team'" x-transition
+        class="mt-8 p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-rose-200 dark:border-rose-900/50">
+        <h3 class="text-base font-semibold mb-4 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            ข้อมูลทีม / ผู้สมัครร่วม
+        </h3>
+
+        <div class="space-y-4">
+            <!-- Team Name -->
+            <div>
+                <label class="block text-sm font-medium mb-1">ชื่อทีม (ถ้ามี)</label>
+                <input type="text" x-model="teamName" placeholder="เช่น ทีมหมูป่า, กลุ่มเพื่อนรัก"
+                    class="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 px-4 py-2 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition">
+            </div>
+
+            <!-- Partners List -->
+            <div class="space-y-3">
+                <label class="block text-sm font-medium">สมาชิกในทีม (ไม่รวมตัวคุณ)</label>
+
+                <template x-for="(partner, index) in partners" :key="index">
+                    <div class="flex gap-2 items-start">
+                        <div class="relative flex-1">
+                            <input type="text" x-model="partner.query" @input.debounce.300ms="searchPartner(index)"
+                                placeholder="ค้นหาเพื่อนด้วยชื่อ หรือ รหัสนักเรียน..."
+                                class="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 px-4 py-2 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition">
+
+                            <!-- Partner Search Results -->
+                            <div x-show="partner.results.length > 0"
+                                class="absolute z-20 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden max-h-40 overflow-y-auto">
+                                <template x-for="p in partner.results" :key="p.id">
+                                    <button @click="selectPartner(index, p)"
+                                        class="w-full text-left px-3 py-2 text-xs hover:bg-rose-50 dark:hover:bg-rose-900/20 border-b border-slate-50 last:border-0 transition">
+                                        <div class="font-medium" x-text="p.name"></div>
+                                        <div class="text-slate-500" x-text="p.number"></div>
+                                    </button>
+                                </template>
+                            </div>
                         </div>
+                        <button type="button" @click="removePartner(index)"
+                            class="p-2 text-slate-400 hover:text-rose-500 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
                     </div>
                 </template>
+
+                <div class="flex items-center gap-4 mt-2">
+                    <button type="button" @click="addPartner"
+                        x-show="selectedActivity && partners.length < (selectedActivity.max_team_size - 1)"
+                        class="text-xs flex items-center gap-1 text-rose-600 font-medium hover:underline">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        เพิ่มสมาชิก
+                    </button>
+                    <span class="text-xs text-slate-400"
+                        x-text="selectedActivity ? '(สูงสุด ' + selectedActivity.max_team_size + ' คน)' : ''"></span>
+                </div>
+            </div>
+
+            <!-- Apply Alone -->
+            <div class="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" x-model="applyAlone"
+                        class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                    <span class="text-sm text-slate-700 dark:text-slate-300">สมัครคนเดียว (ไม่ระบุทีม)</span>
+                </label>
             </div>
         </div>
     </div>
 
-    <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div class="text-xs text-slate-500 dark:text-slate-400">
-            จำกัดนักเรียน 1 คนสามารถลงทะเบียนได้สูงสุด 3 กิจกรรม<br class="hidden sm:block">
-            ระบบจะป้องกันการลงซ้ำและการลงกิจกรรมที่เต็มโดยอัตโนมัติ
+
+    </div> <!-- End Register Tab -->
+
+    <!-- My Registrations Tab -->
+    <div x-show="currentTab === 'my_registrations'" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-cloak>
+        <div class="max-w-xl mx-auto">
+            <div
+                class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
+                <h2 class="text-lg font-semibold mb-4 text-center">ตรวจสอบข้อมูลและยกเลิก</h2>
+
+                <!-- Search Box -->
+                <div class="flex gap-2 mb-6">
+                    <input type="text" x-model="myRegNumber" placeholder="กรอกเลขประจำตัวนักเรียนของคุณ..."
+                        @keyup.enter="loadMyRegistrations"
+                        class="flex-1 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 px-4 py-2.5 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition">
+                    <button @click="loadMyRegistrations"
+                        class="px-5 py-2.5 bg-rose-600 dark:bg-rose-700 text-white rounded-lg hover:bg-rose-700 transition font-medium text-sm shadow-sm active:scale-95">
+                        ตรวจสอบ
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loadingRegs" class="text-center py-8">
+                    <svg class="animate-spin h-8 w-8 text-rose-500 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <p class="text-sm text-slate-500">กำลังโหลดข้อมูล...</p>
+                </div>
+
+                <!-- Results List -->
+                <div x-show="!loadingRegs" class="min-h-[200px] flex flex-col justify-center">
+                    <!-- Initial Empty State (Before search) -->
+                    <template x-if="myRegistrations === null">
+                        <div class="text-center py-8 text-slate-400 dark:text-slate-500 flex flex-col items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-3 opacity-50">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                            </svg>
+                            <p class="text-sm font-medium">กรุณากรอกรหัสนักเรียนเพื่อตรวจสอบ</p>
+                        </div>
+                    </template>
+
+                    <template x-if="myRegistrations !== null && myRegistrations.length === 0">
+                        <div class="text-center py-8 text-slate-500 flex flex-col items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 mb-3 text-slate-300 dark:text-slate-600">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3Z" />
+                            </svg>
+                            <p class="font-medium">ไม่พบข้อมูลการลงทะเบียน</p>
+                            <p class="text-xs mt-1 text-slate-400">กรุณาตรวจสอบเลขประจำตัวอีกครั้ง</p>
+                        </div>
+                    </template>
+
+                    <template x-for="reg in myRegistrations" :key="reg.id">
+                        <div
+                            class="mb-4 p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                            <div>
+                                <h3 class="font-medium text-slate-800 dark:text-slate-200"
+                                    x-text="reg.activity?.title || 'Unknown'">
+                                </h3>
+                                <div class="text-xs text-slate-500 mt-1 flex flex-wrap gap-2">
+                                    <span class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span x-text="new Date(reg.timestamp).toLocaleString('th-TH')"></span>
+                                    </span>
+                                    <span x-show="reg.team_name"
+                                        class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                                        ทีม: <span x-text="reg.team_name"></span>
+                                    </span>
+                                </div>
+                            </div>
+
+
+                            <template x-if="reg.activity?.status === 'open'">
+                                <button @click="cancelRegistration(reg)"
+                                    class="px-3 py-1.5 text-xs font-bold text-rose-600 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 rounded-lg shadow-sm hover:bg-rose-50 dark:hover:bg-rose-900/20 ring-1 ring-inset ring-rose-500/10 transition-all">
+                                    ยกเลิก
+                                </button>
+                            </template>
+                            <template x-if="reg.activity?.status !== 'open'">
+                                <span class="text-[11px] font-medium text-slate-400 italic px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">ปิดรับสมัครแล้ว</span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
         </div>
-        <button type="button" @click="submit"
-            class="inline-flex justify-center items-center px-8 py-3 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-lg shadow-rose-500/20 active:scale-[0.98] transition-all">
-            ยืนยันการลงทะเบียน
-        </button>
     </div>
 </section>
 {% endblock %}

@@ -200,6 +200,9 @@ def create_activity(
         end_time=activity_in.end_time,
         color=activity_in.color,
         group_id=activity_in.group_id,
+        # New fields for V3
+        type=activity_in.type or "individual",
+        max_team_size=activity_in.max_team_size or 1,
     )
     db.add(activity)
     db.commit()
@@ -287,6 +290,8 @@ def update_activity(
         group_name=activity.group.name if activity.group else None,
         registered_count=registered,
         remaining_seats=remaining,
+        type=activity.type,
+        max_team_size=activity.max_team_size,
     )
 
 
@@ -322,6 +327,8 @@ def toggle_activity_status(
         group_name=activity.group.name if activity.group else None,
         registered_count=registered,
         remaining_seats=remaining,
+        type=activity.type,
+        max_team_size=activity.max_team_size,
     )
 
 
@@ -414,6 +421,8 @@ def dashboard_stats(
                 group_name=a.group.name if a.group else None,
                 registered_count=registered,
                 remaining_seats=remaining,
+                type=a.type,
+                max_team_size=a.max_team_size,
             )
         )
     return schemas.DashboardStats(
@@ -488,17 +497,17 @@ def import_students(
         wb = openpyxl.load_workbook(io.BytesIO(contents))
         sheet = wb.active
 
-        # Assume header is in row 1: Code, Prefix, Name, Surname
-        # รหัส, คำนำหน้า, ชื่อ, สกุล
+        # Assume header is in row 1: Code, Prefix, Name, Surname, Classroom, Sequence
+        # รหัส, คำนำหน้า, ชื่อ, สกุล, ห้อง, เลขที่
         imported_count = 0
         for row in sheet.iter_rows(min_row=2, values_only=True):
-            # Format: รหัส(0), คำนำหน้า(1), ชื่อ(2), นามสกุล(3), ห้อง(4)
+            # Format: รหัส(0), คำนำหน้า(1), ชื่อ(2), นามสกุล(3), ห้อง(4), เลขที่(5)
             if not row or len(row) < 1:
                 continue
             
             # Use safe padding to handle rows with fewer columns
-            data = (list(row) + [None] * 5)[:5]
-            code, prefix, first_name, last_name, classroom = data
+            data = (list(row) + [None] * 6)[:6]
+            code, prefix, first_name, last_name, classroom, sequence_val = data
             
             if not code or not first_name:
                 continue
@@ -507,17 +516,27 @@ def import_students(
             full_name = f"{prefix or ''}{first_name} {last_name or ''}".strip()
             student_number = str(code).strip()
             classroom_name = str(classroom).strip() if classroom else ""
+            
+            # Parse Sequence
+            sequence_num = None
+            if sequence_val:
+                try:
+                    sequence_num = int(float(str(sequence_val).strip()))
+                except ValueError:
+                    pass
 
             # Check if student exists
             existing = db.query(models.Student).filter(models.Student.number == student_number).first()
             if existing:
                 existing.name = full_name
                 existing.classroom = classroom_name
+                existing.sequence = sequence_num
             else:
                 new_student = models.Student(
                     number=student_number,
                     name=full_name,
-                    classroom=classroom_name
+                    classroom=classroom_name,
+                    sequence=sequence_num
                 )
                 db.add(new_student)
             

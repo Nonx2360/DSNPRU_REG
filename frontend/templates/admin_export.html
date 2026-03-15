@@ -60,47 +60,58 @@
             <p class="text-xs text-slate-500 mt-1">ดาวน์โหลดรายชื่อผู้ลงทะเบียนเป็นไฟล์ Excel หรือ PDF</p>
         </div>
         <a href="/admin/dashboard"
-            class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition">กลับแดชบอร์ด</a>
+            class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-semibold shadow-sm flex items-center text-xs">กลับแดชบอร์ด</a>
     </div>
 
     <div class="max-w-4xl grid md:grid-cols-2 gap-4">
         <div
-            class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 sm:p-6 shadow-sm space-y-4">
-            <div>
-                <label
-                    class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">ขอบเขตการส่งออก</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button @click="scope = 'all'"
-                        :class="scope === 'all' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700'"
-                        class="px-3 py-1.5 rounded-xl border text-xs font-medium transition text-center shadow-sm">
-                        ทุกกิจกรรม
-                    </button>
-                    <button @click="scope = 'activity'"
-                        :class="scope === 'activity' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700'"
-                        class="px-3 py-1.5 rounded-xl border text-xs font-medium transition text-center shadow-sm">
-                        ระบุกิจกรรม
-                    </button>
+            class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-6">
+            <h2 class="text-sm font-bold uppercase tracking-widest text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <div class="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                </div>
+                ตั้งค่าการส่งออก
+            </h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label
+                        class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">ขอบเขตการส่งออก</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button @click="scope = 'all'"
+                            :class="scope === 'all' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700'"
+                            class="px-4 py-2.5 rounded-xl border text-xs font-bold transition text-center shadow-sm tracking-wide">
+                            ทุกกิจกรรม
+                        </button>
+                        <button @click="scope = 'activity'"
+                            :class="scope === 'activity' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800' : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800/50 dark:border-slate-700'"
+                            class="px-4 py-2.5 rounded-xl border text-xs font-bold transition text-center shadow-sm tracking-wide">
+                            ระบุกิจกรรม
+                        </button>
+                    </div>
+                </div>
+
+                <div x-show="scope === 'activity'" x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                    <label
+                        class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">เลือกกิจกรรม</label>
+                    <select x-model="activityId"
+                        class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm font-medium">
+                        <option value="">-- เลือกกิจกรรม --</option>
+                        <template x-for="activity in activities" :key="activity.id">
+                            <option :value="activity.id" x-text="activity.title"></option>
+                        </template>
+                    </select>
                 </div>
             </div>
 
-            <div x-show="scope === 'activity'" x-transition:enter="transition ease-out duration-200"
-                x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
-                <label
-                    class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">เลือกกิจกรรม</label>
-                <select x-model="activityId"
-                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-xs px-3 py-2 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition">
-                    <option value="">-- เลือกกิจกรรม --</option>
-                    <template x-for="activity in activities" :key="activity.id">
-                        <option :value="activity.id" x-text="activity.title"></option>
-                    </template>
-                </select>
-            </div>
-
-            <div class="pt-2 space-y-2">
+            <div class="pt-4 space-y-3">
                 <button
-                    class="w-full px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-sm"
+                    class="w-full px-4 py-3 rounded-xl bg-slate-900 dark:bg-slate-700 text-white text-xs font-bold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-md tracking-wide"
                     @click="exportExcel">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -108,9 +119,9 @@
                     ดาวน์โหลด Excel
                 </button>
                 <button
-                    class="w-full px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition flex items-center justify-center gap-2 shadow-lg shadow-rose-500/10"
+                    class="w-full px-4 py-3 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition flex items-center justify-center gap-2 shadow-md shadow-rose-500/20 tracking-wide"
                     @click="exportPdf">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -123,20 +134,20 @@
         </div>
 
         <div
-            class="rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 p-4 sm:p-6 self-start">
-            <h3 class="text-xs font-semibold text-rose-800 dark:text-rose-400 mb-2 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+            class="rounded-2xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 p-6 self-start shadow-sm flex flex-col gap-3">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-rose-800 dark:text-rose-400 mb-1 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 คำแนะนำ
             </h3>
-            <ul class="text-[11px] text-rose-700/80 dark:text-rose-400/70 space-y-1.5 leading-relaxed">
-                <li>• เลือก <strong>"ทุกกิจกรรม"</strong> เพื่อรับไฟล์รวม</li>
-                <li>• เลือก <strong>"ระบุกิจกรรม"</strong> หากต้องการเฉพาะกิจกรรม</li>
-                <li>• ไฟล์ PDF จะถูกจัดรูปแบบเป็นตารางสวยงาม</li>
-                <li>• รองรับภาษาไทยสมบูรณ์แบบ</li>
+            <ul class="text-xs text-rose-700 dark:text-rose-400/80 space-y-2 leading-relaxed font-medium">
+                <li class="flex gap-2 items-start"><span class="text-rose-400 font-bold">•</span> เลือก <strong class="text-rose-900 dark:text-rose-300">"ทุกกิจกรรม"</strong> เพื่อรับไฟล์รวมผู้สมัครทั้งหมด</li>
+                <li class="flex gap-2 items-start"><span class="text-rose-400 font-bold">•</span> เลือก <strong class="text-rose-900 dark:text-rose-300">"ระบุกิจกรรม"</strong> หากต้องการข้อมูลเฉพาะของกิจกรรมนั้นๆ</li>
+                <li class="flex gap-2 items-start"><span class="text-rose-400 font-bold">•</span> ไฟล์ PDF จะถูกจัดรูปแบบเป็นตารางสวยงามพร้อมพิมพ์</li>
+                <li class="flex gap-2 items-start"><span class="text-rose-400 font-bold">•</span> รองรับการแสดงผลภาษาไทยสมบูรณ์แบบ</li>
             </ul>
         </div>
     </div>
