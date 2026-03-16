@@ -62,6 +62,7 @@ class Registration(Base):
     student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
     activity_id = Column(Integer, ForeignKey("activities.id"), nullable=False)
     team_name = Column(String, nullable=True) # New field for Team Registration
+    status = Column(String, default="registered") # registered / waitlisted
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     student = relationship("Student", back_populates="registrations")
@@ -86,4 +87,13 @@ class AdminLog(Base):
     action = Column(String, nullable=False)
     details = Column(String, nullable=True)
     ip_address = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    color = Column(String, default="indigo")
     timestamp = Column(DateTime, default=datetime.utcnow)

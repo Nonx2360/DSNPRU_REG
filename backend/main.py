@@ -139,3 +139,7 @@ async def admin_users_page(request: Request):
 @app.get("/admin/analytics")
 async def admin_analytics_page(request: Request):
     return templates.TemplateResponse("admin_analytics.html", {"request": request})
+
+@app.get("/admin/announcements")
+async def admin_announcements_page(request: Request):
+    return templates.TemplateResponse("admin_announcements.html", {"request": request})

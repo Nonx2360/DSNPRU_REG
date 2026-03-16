@@ -27,6 +27,16 @@ def search_students(q: str, db: Session = Depends(get_db)):
     return students
 
 
+@router.get("/announcements/active", response_model=List[schemas.Announcement])
+def get_active_announcements(db: Session = Depends(get_db)):
+    return (
+        db.query(models.Announcement)
+        .filter(models.Announcement.is_active == True)
+        .order_by(models.Announcement.timestamp.desc())
+        .all()
+    )
+
+
 @router.get("/activities", response_model=List[schemas.Activity])
 def list_activities(db: Session = Depends(get_db)):
     # Only show activities where group is visible (or no group)
@@ -41,7 +51,8 @@ def list_activities(db: Session = Depends(get_db)):
     )
     result = []
     for a in activities:
-        registered = len(a.registrations)
+        registered = len([r for r in a.registrations if r.status == "registered"])
+        waitlisted = len([r for r in a.registrations if r.status == "waitlisted"])
         remaining = max(a.max_people - registered, 0)
         result.append(
             schemas.Activity(
@@ -129,16 +140,19 @@ def register_student(payload: schemas.RegistrationCreate, request: Request, db: 
             if partner.id not in [m.id for m in members]:
                 members.append(partner)
 
-    # 4. Capacity Check
+    # 4. Capacity & Waitlist Check
     registered_count = (
         db.query(models.Registration)
-        .filter(models.Registration.activity_id == activity.id)
+        .filter(
+            models.Registration.activity_id == activity.id,
+            models.Registration.status == "registered"
+        )
         .count()
     )
+    
+    is_waitlisted = False
     if registered_count + len(members) > activity.max_people:
-         return schemas.MessageResponse(
-             success=False, message="ที่นั่งไม่พอสำหรับจำนวนสมาชิกในทีม", remaining_seats=max(activity.max_people - registered_count, 0)
-         )
+         is_waitlisted = True
 
     # 5. Validation Loop for ALL members
     for member in members:
@@ -212,22 +226,34 @@ def register_student(payload: schemas.RegistrationCreate, request: Request, db: 
     # 6. Commit Registrations
     team_name_val = payload.team_name if (activity.type == "team" and payload.team_name) else None
     
+    current_status = "waitlisted" if is_waitlisted else "registered"
+    
     for member in members:
-        reg = models.Registration(student_id=member.id, activity_id=activity.id, team_name=team_name_val)
+        reg = models.Registration(student_id=member.id, activity_id=activity.id, team_name=team_name_val, status=current_status)
         db.add(reg)
 
     db.commit()
 
     # Log action
     try:
-        details = f"Registered for '{activity.title}'"
+        details = f"{'Waitlisted' if is_waitlisted else 'Registered'} for '{activity.title}'"
         if len(members) > 1:
             details += f" with {len(members)-1} partners (Team: {team_name_val})"
         log_action(db, f"Student: {student.number}", "REGISTER", details, request)
     except Exception as e:
         print(f"Public log failed: {e}")
 
-    remaining = activity.max_people - (registered_count + len(members))
+    remaining = activity.max_people - (registered_count + len(members)) if not is_waitlisted else 0
+
+    if is_waitlisted:
+        q_count = db.query(models.Registration).filter(
+            models.Registration.activity_id == activity.id,
+            models.Registration.status == "waitlisted"
+        ).count()
+        return schemas.MessageResponse(
+            success=True, message=f"จองคิวสำเร็จ (อยู่ในรายชื่อสำรองคิวที่ {q_count})", remaining_seats=0
+        )
+
     return schemas.MessageResponse(
         success=True, message="ลงทะเบียนสำเร็จ!", remaining_seats=max(remaining, 0)
     )
@@ -272,10 +298,31 @@ def cancel_registration(payload: schemas.CancelRequest, request: Request, db: Se
     if activity.status == "close":
          return schemas.MessageResponse(success=False, message="กิจกรรมปิดแล้ว ไม่สามารถยกเลิกได้", remaining_seats=None)
     
+    was_registered = (reg.status == "registered")
+
     # 4. Delete
     db.delete(reg)
     db.commit()
     
+    if was_registered:
+        # Promote next in line if any
+        next_in_line = (
+             db.query(models.Registration)
+             .filter(
+                 models.Registration.activity_id == activity.id,
+                 models.Registration.status == "waitlisted"
+             )
+             .order_by(models.Registration.timestamp.asc())
+             .first()
+        )
+        if next_in_line:
+            next_in_line.status = "registered"
+            db.commit()
+            try:
+                log_action(db, "SYSTEM", "PROMOTE", f"Promoted student.id={next_in_line.student_id} to registered for '{activity.title}'", request)
+            except:
+                pass
+
     # Log
     try:
         log_action(db, f"Student: {student.number}", "CANCEL", f"Cancelled '{activity.title}'", request)
@@ -283,7 +330,10 @@ def cancel_registration(payload: schemas.CancelRequest, request: Request, db: Se
         pass
         
     # Get remaining seats
-    count = db.query(models.Registration).filter(models.Registration.activity_id == activity.id).count()
+    count = db.query(models.Registration).filter(
+        models.Registration.activity_id == activity.id,
+        models.Registration.status == "registered"
+    ).count()
     remaining = max(activity.max_people - count, 0)
     
     return schemas.MessageResponse(

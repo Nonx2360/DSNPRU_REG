@@ -10,6 +10,7 @@
             form: { name: '', classroom: '', number: '', activity_id: null, sequence: '' },
             searchQuery: '',
             searchResults: [],
+            now: new Date(),
 
             // Tabs
             currentTab: 'register',
@@ -98,9 +99,20 @@
                 return groups;
             },
             selectActivity(activity) {
-                if (activity.status !== 'open' || activity.remaining_seats <= 0) {
-                    Swal.fire('ไม่สามารถเลือกกิจกรรมนี้ได้', 'กิจกรรมปิดรับสมัครหรือเต็มแล้ว', 'warning');
+                if (activity.status !== 'open') {
+                    Swal.fire('ไม่สามารถเลือกกิจกรรมนี้ได้', 'กิจกรรมปิดรับสมัครแล้ว', 'warning');
                     return;
+                }
+                if (activity.remaining_seats <= 0) {
+                    Swal.fire({
+                        title: 'กิจกรรมเต็มแล้ว',
+                        text: 'ระบบจะจัดเก็บชื่อของคุณไว้ในรายชื่อสำรอง (Waitlist) ตามลำดับคิว หากมีผู้ยกเลิก ระบบจะเลื่อนคิวให้โดยอัตโนมัติ',
+                        icon: 'info',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 5000
+                    });
                 }
                 this.form.activity_id = activity.id;
                 this.selectedActivity = activity;
@@ -225,6 +237,32 @@
                         if (updated) this.selectedActivity = updated;
                     }
                 }, 10000);
+                
+                // Real-time: Refresh UI timers every minute
+                setInterval(() => {
+                    this.now = new Date();
+                }, 60000);
+            },
+            getTimeLeft(endTimeStr) {
+                if (!endTimeStr) return null;
+                const end = new Date(endTimeStr);
+                const diff = end - this.now;
+                if (diff <= 0) return { text: 'หมดเวลาสมัคร', colorClass: 'text-slate-500 bg-slate-100 dark:bg-slate-800' };
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const mins = Math.floor((diff / 1000 / 60) % 60);
+                
+                let text = 'เหลือเวลา ';
+                if (days > 0) text += days + ' วัน ';
+                if (hours > 0) text += hours + ' ชม. ';
+                if (days === 0 && hours === 0) text += mins + ' นาที';
+                
+                let colorClass = 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-800';
+                if (days < 2 && days >= 0) colorClass = 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-800';
+                if (days === 0 && hours < 12) colorClass = 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-900/30 dark:border-rose-800 font-bold animate-pulse';
+                
+                return { text, colorClass };
             }
         }));
     });
@@ -256,7 +294,7 @@
         x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
         <div class="grid lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1">
-                <div class="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden sticky top-24">
+                <div class="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden relative lg:sticky lg:top-24">
                     <div class="p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50">
                         <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5 text-rose-500">
@@ -382,6 +420,15 @@
                                                     :class="activity.status === 'open' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'">
                                                     <span x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
                                                 </span>
+                                                <template x-if="activity.end_time && activity.status !== 'close'">
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 transition-colors"
+                                                          :class="getTimeLeft(activity.end_time).colorClass">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <span x-text="getTimeLeft(activity.end_time).text"></span>
+                                                    </span>
+                                                </template>
                                                 <template x-if="activity.type === 'team'">
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800">
                                                         TEAM <span x-text="'(Max ' + activity.max_team_size + ')'"></span>
@@ -396,7 +443,7 @@
                                                 <span class="text-slate-500 dark:text-slate-400">สถานะที่นั่ง:</span>
                                                 <span :class="activity.remaining_seats <= 5 && activity.remaining_seats > 0 ? 'text-amber-600 dark:text-amber-500' : (activity.remaining_seats === 0 ? 'text-rose-600 dark:text-rose-500' : 'text-slate-700 dark:text-slate-300')">
                                                     <span x-show="activity.remaining_seats > 0">ว่าง <span class="font-bold" x-text="activity.remaining_seats"></span><span class="text-slate-400 dark:text-slate-500 font-normal"> / <span x-text="activity.max_people"></span></span></span>
-                                                    <span x-show="activity.remaining_seats === 0" class="font-bold">เต็มแล้ว</span>
+                                                    <span x-show="activity.remaining_seats === 0" class="font-bold">เต็ม (ลงคิวสำรองได้)</span>
                                                 </span>
                                             </div>
                                             <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -562,9 +609,17 @@
                         <div
                             class="mb-4 p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                             <div>
-                                <h3 class="font-medium text-slate-800 dark:text-slate-200"
-                                    x-text="reg.activity?.title || 'Unknown'">
-                                </h3>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-medium text-slate-800 dark:text-slate-200"
+                                        x-text="reg.activity?.title || 'Unknown'">
+                                    </h3>
+                                    <template x-if="reg.status === 'waitlisted'">
+                                        <span class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 rounded-full border border-amber-200 dark:border-amber-800">สำรองคิว</span>
+                                    </template>
+                                    <template x-if="reg.status === 'registered'">
+                                        <span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 rounded-full border border-emerald-200 dark:border-emerald-800">ลงทะเบียนสำเร็จ</span>
+                                    </template>
+                                </div>
                                 <div class="text-xs text-slate-500 mt-1 flex flex-wrap gap-2">
                                     <span class="flex items-center gap-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none"

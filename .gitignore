@@ -152,3 +152,5 @@ cython_debug/
 app.log
 sql_app.db
 *.db
+
+*.pdf

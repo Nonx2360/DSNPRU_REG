@@ -375,9 +375,32 @@ def delete_registration(
     if not reg:
         raise HTTPException(status_code=404, detail="ไม่พบข้อมูลการลงทะเบียน")
     
+    was_registered = (reg.status == "registered")
+    activity = reg.activity
+
     details = f"Removed Student {reg.student.number} ({reg.student.name}) from activity ID {reg.activity_id} ({reg.activity.title})"
     db.delete(reg)
     db.commit()
+
+    if was_registered:
+        # Promote next in line if any
+        next_in_line = (
+             db.query(models.Registration)
+             .filter(
+                 models.Registration.activity_id == activity.id,
+                 models.Registration.status == "waitlisted"
+             )
+             .order_by(models.Registration.timestamp.asc())
+             .first()
+        )
+        if next_in_line:
+            next_in_line.status = "registered"
+            db.commit()
+            try:
+                log_action(db, "SYSTEM", "PROMOTE", f"Promoted student.id={next_in_line.student_id} to registered for '{activity.title}' via ADMIN removal", request)
+            except:
+                pass
+
     log_action(db, admin.username, "DELETE_REGISTRATION", details, request)
     return
 
@@ -636,5 +659,68 @@ def list_classrooms(
     admin: models.Admin = Depends(get_current_admin),
 ):
     classrooms = db.query(models.Student.classroom).distinct().all()
-    # Flatten list of tuples and filter out None
     return sorted([c[0] for c in classrooms if c[0]])
+
+
+@router.get("/api/announcements", response_model=List[schemas.Announcement])
+def admin_list_announcements(
+    db: Session = Depends(get_db), admin: models.Admin = Depends(get_current_admin)
+):
+    return db.query(models.Announcement).order_by(models.Announcement.timestamp.desc()).all()
+
+
+@router.post("/api/announcements", response_model=schemas.Announcement)
+def create_announcement(
+    ann_in: schemas.AnnouncementCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    ann = models.Announcement(
+        message=ann_in.message,
+        is_active=ann_in.is_active,
+        color=ann_in.color
+    )
+    db.add(ann)
+    db.commit()
+    db.refresh(ann)
+    log_action(db, admin.username, "CREATE_ANNOUNCEMENT", f"Created announcement", request)
+    return ann
+
+
+@router.put("/api/announcements/{ann_id}", response_model=schemas.Announcement)
+def update_announcement(
+    ann_id: int,
+    ann_in: schemas.AnnouncementUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    ann = db.query(models.Announcement).filter(models.Announcement.id == ann_id).first()
+    if not ann:
+        raise HTTPException(status_code=404, detail="ไม่พบประกาศ")
+
+    for field, value in ann_in.dict(exclude_unset=True).items():
+        setattr(ann, field, value)
+
+    db.commit()
+    db.refresh(ann)
+    log_action(db, admin.username, "UPDATE_ANNOUNCEMENT", f"Updated announcement ID {ann.id}", request)
+    return ann
+
+
+@router.delete("/api/announcements/{ann_id}", status_code=204)
+def delete_announcement(
+    ann_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    ann = db.query(models.Announcement).filter(models.Announcement.id == ann_id).first()
+    if not ann:
+        raise HTTPException(status_code=404, detail="ไม่พบประกาศ")
+
+    db.delete(ann)
+    db.commit()
+    log_action(db, admin.username, "DELETE_ANNOUNCEMENT", f"Deleted announcement ID {ann_id}", request)
+    return

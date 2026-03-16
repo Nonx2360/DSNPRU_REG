@@ -106,6 +106,7 @@
                     <th>ห้อง</th>
                     <th>เลขที่</th>
                     <th>เวลา</th>
+                    <th>สถานะ</th>
                     <th class="text-right">จัดการ</th>
                 </tr>
             </thead>
@@ -116,6 +117,10 @@
                         <td x-text="r.student.classroom"></td>
                         <td x-text="r.student.number"></td>
                         <td x-text="new Date(r.timestamp).toLocaleString('th-TH')"></td>
+                        <td>
+                            <span x-show="r.status === 'registered'" class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded border border-emerald-200">ลงทะเบียนสำเร็จ</span>
+                            <span x-show="r.status === 'waitlisted'" class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 rounded border border-amber-200">สำรองคิว</span>
+                        </td>
                         <td class="text-right">
                             <button @click="deleteRegistration(r.id)"
                                 class="text-rose-600 hover:text-rose-800 transition p-1">

@@ -103,6 +103,7 @@ class RegistrationCreate(BaseModel):
 
 class Registration(RegistrationBase):
     id: int
+    status: str = "registered"
     timestamp: datetime
     # activity: Optional[Activity] = None  <-- This might cause circular import issues if not careful, but Pydantic handles it. 
     # Actually, in schemas.py, Activity is defined above.
@@ -157,6 +158,26 @@ class AdminLog(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class AnnouncementBase(BaseModel):
+    message: str
+    is_active: bool = True
+    color: str = "indigo"
+
+class AnnouncementCreate(AnnouncementBase):
+    pass
+
+class AnnouncementUpdate(BaseModel):
+    message: Optional[str] = None
+    is_active: Optional[bool] = None
+    color: Optional[str] = None
+
+class Announcement(AnnouncementBase):
+    id: int
+    timestamp: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class MessageResponse(BaseModel):
