@@ -1,8 +1,8 @@
 # DSNPRU_REG - School Activity Registration System
 
-**Version 3.1.5**
+**Version 3.2.0**
 
-A comprehensive web-based activity registration system designed for schools. It allows students to view and register for activities, while providing administrators with powerful tools to manage activities, students, and registration data. Built with **FastAPI** for high performance and **Alpine.js** for a responsive, modern frontend.
+A comprehensive web-based activity registration system designed for schools. It allows students to view and register for activities, while providing administrators with powerful tools to manage activities, students, and registration data. Built with **FastAPI** for high performance and **Alpine.js** and **Tailwind CSS** for a responsive, modern frontend.
 
 ---
 
@@ -37,16 +37,16 @@ DSNPRU_REG solves the challenge of manual activity registration in schools:
 
 ### Public / Student Interface
 
-The student-facing side is designed for ease of use and quick access information:
+The student-facing side is designed for ease of use and quick access to information:
 
 - **Activity Browser**: View all available activities with descriptions, remaining seats, and schedules.
 - **Real-time Status**: Clearly see which activities are Open or Closed.
 - **Activity Type Badges**: Visual indicators showing whether an activity is Individual (เดี่ยว) or Team/Partner (ทีม/คู่).
 - **Responsive Design**: Works perfectly on mobile phones, tablets, and desktop computers.
-- **Clickable Branding**: The navigation bar logo and title link directly back to the main registration page.
-- **Real-time Seat Counts**: Activity seat counts update automatically every 10 seconds without page refresh.
-- **Student Context Display**: After entering student ID, view registered activities and remaining group quotas.
+- **System Announcements**: View important messages broadcast by administrators with color-coded alerts.
+- **Student Context Display**: After entering student number, view registered activities and remaining group quotas.
 - **Partner Search Autocomplete**: Search for partners by name or student number with autocomplete dropdown.
+- **Registration Status**: Display whether registration is active or waitlisted.
 
 ### Team Registration System (V3 NEW)
 
@@ -84,45 +84,51 @@ A comprehensive backend for school staff, accessed via a **hidden login portal**
 
 **Security & Access**
 - **Hidden Admin Link**: The admin login is discreetly located by clicking the **©** copyright symbol in the footer of the main page.
-- **Secure Authentication**: JWT-based login sessions with automatic timeout.
+- **Secure Authentication**: JWT-based login with access tokens.
+- **Password Management**: Admins can change their own passwords with validation of old password.
 - **Role-Based Access Control (RBAC)**:
-    - **Superuser**: Can manage other admins and view system logs.
-    - **Staff**: Can manage activities and students but cannot alter system settings.
+    - **Superuser**: Can manage other admins, view system logs, and access all administrative functions.
+    - **Staff**: Can manage activities, students, and groups but cannot create/delete admin accounts.
 
 **Activity Management**
-- **CRUD Operations**: Create, Read, Update, and Delete activities.
+- **CRUD Operations**: Create, Read, Update, and Delete activities with full control.
 - **Activity Types**: Choose between Individual and Team activities when creating.
 - **Max Team Size**: For team activities, set the maximum number of members allowed per team (1-10).
-- **Grouping**: Organize activities into groups (e.g., "Sports", "Academic Clubs") with group-level quotas.
-- **Classroom Restrictions**: Limit activities to specific classrooms (e.g., "M.1/1 only").
+- **Group Organization**: Organize activities into groups (e.g., "Sports", "Academic Clubs") with group-level quotas and visibility toggle.
+- **Classroom Restrictions**: Limit activities and groups to specific classrooms (e.g., "M.1/1 only").
 - **Time Scheduling**: Set automatic open and close times for registration.
-- **Manual Toggles**: Instantly Open/Close registration for specific activities with a single click.
 - **Color Coding**: Assign custom colors to activity cards for visual organization.
+- **Activity Detail Page**: View all registrations for an activity with the ability to manually remove students.
 
 **Student Management**
-- **Bulk Imports**: Import student lists via Excel files.
+- **Bulk Imports**: Import student lists via Excel files (formats: 5-column and 6-column with sequence number).
 - **Search & Filter**: Quickly find students by name or ID.
-- **Bulk Actions**: Delete multiple students or update their classroom info in one go.
-- **Registration History**: View detailed activity history for each student.
-- **Manual Removal**: Admins can now manually remove students from an activity via the Activity Details page.
+- **Class Number Tracking**: Track both student ID (รหัส) and class sequence number (เลขที่) for accurate identification.
+- **Bulk Actions**: Delete multiple students in batch operations.
+- **Student Details**: View and edit student information including name, classroom, student ID, and sequence number.
+- **Manual Removal**: Remove students from specific activities via the Activity Details page.
 
-**Comprehensive Logging System**
-- **Action Tracking**: The system logs **ALL** critical actions, including:
+**Comprehensive Logging & Audit System**
+- **Action Tracking**: The system logs **ALL** critical actions, providing full audit trail:
     - **Admin Actions**: Login, Logout, Change Password, Create/Delete Admin.
-    - **Activity Management**: Create, Update, Delete, and Toggle Status of activities.
-    - **Student Management**: Import, Update, Delete, and Bulk operations.
-    - **Student Actions**: Student registrations and cancellations are logged with timestamps.
-- **Log Viewer**: Superusers can view the full event history in the "Logs" tab of the dashboard.
+    - **Activity Management**: Create, Update, Delete activities.
+    - **Student Management**: Import, Delete students.
+    - **Student Actions**: Student registrations and cancellations with timestamps.
+- **Request Logging**: All API requests are tracked with timestamp, method, path, status code, and response time.
+- **Log Viewer**: Superusers can view the complete event history in the admin logs, sorted by timestamp.
+- **IP Address Tracking**: Logs include client IP addresses for security monitoring.
 
-**Analytics & Insights**
-- **Advanced Dashboard**: Visual charts showing registration trends, group popularity, and classroom participation.
-- **Real-time Updates**: Data on the dashboard and analytics page refreshes every 30 seconds.
-- **Interactive Visualizations**: Powered by Chart.js for beautiful, responsive data insights.
+**System Announcements**
+- **Broadcast Messages**: Create and manage system-wide announcements visible on the public page.
+- **Color-Coded Alerts**: Assign colors to announcements for visual emphasis (indigo, red, green, etc.).
+- **Activation Toggle**: Enable/disable announcements without deleting them.
+- **Timestamp Tracking**: Each announcement records creation time for audit purposes.
 
 **Data Export**
-- **PDF Export**: Professional registration lists with team name grouping for team activities.
-- **Excel Export**: Includes team name column for comprehensive data.
-- **Team-Aware Formatting**: PDF exports for team activities sort registrations by team name for easier reading.
+- **Excel Export**: Comprehensive registration lists with activity, student name, classroom, student ID, and sequence number columns.
+- **PDF Export**: Professional registration reports with Thai font support and formatted tables.
+- **Filtered Exports**: Export all registrations or filter by specific activity.
+- **Team-Aware Formatting**: For team activities, exports properly display team names and member information.
 
 ---
 
@@ -267,23 +273,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 4: Run Database Migrations
+### Step 4: Database Setup
 
-If upgrading from a previous version, run the migration script to add new columns:
+The system automatically creates all necessary database tables on first run. No manual migrations are required for fresh installations.
+
+If upgrading from a version prior to V3.0, you may need to run migration scripts to update existing database schemas:
 
 ```bash
-# Old migration
+# For adding team activity support (V3.0+)
 python migrate_db.py
 
-# New migration for sequence_number (V3.1.5)
-python migrate_db_v2.py
+# For adding sequence number field (V3.1.5+)
+python migrate_sequence.py
 ```
 
-This will add:
-- `type` column to `activities` table (individual/team)
-- `max_team_size` column to `activities` table
-- `team_name` column to `registrations` table
-- `sequence_number` column to `students` table (V3.1.5)
+These scripts will safely add new columns without affecting existing data.
 
 ### Step 5: Run the Server
 
@@ -300,17 +304,20 @@ The application will be available at:
 
 ## Configuration
 
-The system is designed for zero-configuration startup.
+The system is designed for zero-configuration startup with sensible defaults.
 
 **Default Admin Credentials:**
 On the first run, if no admin exists, the system automatically creates:
 - **Username**: `admin`
 - **Password**: `admin123`
 
-*Please change this password immediately after your first login.*
+**⚠️ SECURITY WARNING**: Change this password immediately after your first login using the "Change Password" feature in the admin dashboard.
 
 **Database:**
-The system uses `sql_app.db` (SQLite) created automatically in the root directory.
+The system uses `sql_app.db` (SQLite) created automatically in the root directory. Ensure write permissions for the application.
+
+**Environment Setup:**
+No environment variables are required for basic operation. The system can run standalone after dependency installation.
 
 ---
 
@@ -318,46 +325,127 @@ The system uses `sql_app.db` (SQLite) created automatically in the root director
 
 ### For Administrators
 
-1.  **Login**: Click the hidden **©** symbol in the footer of the main page.
-2.  **Dashboard**: Overview of current status. Use the sidebar or toolbar to navigate.
-3.  **Manage Students**:
+1.  **Initial Login**:
+    - Use default credentials (Username: `admin`, Password: `admin123`).
+    - Click the hidden **©** copyright symbol in the footer of the main page.
+    - Immediately change your password in the admin dashboard.
+
+2.  **Dashboard Overview**:
+    - View summary statistics after login.
+    - Use the sidebar to navigate between different admin functions.
+
+3.  **Manage Admin Accounts** (Superuser Only):
+    - Go to "Admin Settings" or use the admin API.
+    - Create new admin accounts with username and password.
+    - Set superuser privileges for trusted administrators.
+    - Delete admin accounts (cannot delete own account).
+    - Change your own password anytime.
+
+4.  **Manage Students**:
     - Go to "Student Management".
-    - Click "Import (Excel)" to upload your student list.
-    - **V3.1.5 Format (6 columns)**: `รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`.
-    - Supports both old (5-column) and new (6-column) formats automatically.
-4.  **Create Activities**:
+    - **Import Excel File**:
+      - Click "Import (Excel)" to upload student list.
+      - **Supported Formats**:
+        - **New Format (6 columns)**: `รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
+        - **Legacy Format (5 columns)**: `รหัส`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
+      - System automatically detects and handles both formats.
+    - **Manage Individual Students**: Search, view details, edit, or delete students.
+    - **Bulk Operations**: Delete multiple students at once.
+
+5.  **Create and Manage Activities**:
     - Go to "Manage Activities".
-    - Click "New Activity" or use "Group Manager" to create quotas for sets of activities.
-    - **NEW**: Select "Activity Type" - Individual or Team.
-    - **NEW**: For Team activities, set "Max Team Size" (e.g., 2 for pairs, 5 for group activities).
-    - Set start/end times for automatic control.
-5.  **Remove Students**:
-    - Navigate to the activity detail page.
-    - Click the trash icon next to a student's name to remove their registration. **(Action Logged)**
-6.  **Export Data**:
+    - **Create New Activity**:
+      - Set title, description, and maximum quota.
+      - **Select Activity Type**:
+        - **Individual**: Single student registration.
+        - **Team**: Multiple students per registration with configurable team size.
+      - For team activities, set "Max Team Size" (2-10 members).
+      - Set start/end times for automatic registration control.
+      - Assign classroom restrictions if needed.
+      - Choose a color for visual organization.
+    - **Edit Activities**: Modify activity details anytime.
+    - **Activity Groups**: Use "Group Manager" to create logical groups of activities with quotas.
+    - **View Activity Details**: Click an activity to see all registrations and student details.
+
+6.  **Manage Registrations**:
+    - Navigate to Activity Details page.
+    - **View Registrations**: See all students registered for an activity.
+    - **Remove Students**: Click the trash icon next to a student to remove their registration (action is logged).
+    - **Team Information**: For team activities, view team names and all team members.
+
+7.  **Broadcast Announcements**:
+    - Create system-wide announcements visible on the public page.
+    - Set color for visual emphasis.
+    - Activate/deactivate announcements without deletion.
+
+8.  **Export Data**:
     - Go to "Export".
-    - Select "All Activities" or a specific one.
-    - Choose PDF or Excel format.
-    - **NEW**: For team activities, PDF groups registrations by team name.
+    - **Choose Data**: Export all registrations or a specific activity.
+    - **Choose Format**:
+      - **Excel**: Detailed spreadsheet with columns: Activity, Student Name, Classroom, Student ID, Sequence Number.
+      - **PDF**: Professional formatted report with Thai font support.
+    - Both formats include team name information for team activities.
+
+9.  **View Audit Logs** (Superuser Only):
+    - Go to "Logs" section.
+    - Review all admin actions with timestamps, IP addresses, and details.
+    - Track all system activities for security and accountability.
+    - Filter by admin, action type, or date range.
 
 ### For Students
 
-1.  Visit the home page.
-2.  Enter your student number or name to search and identify yourself.
-3.  View your registered activities and remaining group quotas.
-4.  Browse available activities - look for badges indicating "Individual" (เดี่ยว) or "Team" (ทีม/คู่).
-5.  Click to register:
-    - **Individual Activity**: Direct registration with confirmation.
-    - **Team Activity**: 
-      - A modal appears showing max team size.
-      - Enter a team name (optional).
-      - Search and select partners using the autocomplete inputs.
-      - Or check "Apply Alone" to register solo.
-      - Submit to register all team members at once.
-6.  **Cancel a Registration** (NEW):
-    - In your "Registered Activities" section, click the trash icon.
-    - Confirm the cancellation.
-    - The activity will be removed from your list and seats will be freed.
+1.  **Visit the Home Page**:
+    - Open the main registration page in your browser.
+    - Check for any system announcements at the top of the page.
+
+2.  **Identify Yourself**:
+    - Enter your student ID number (รหัส) or full name in the search box.
+    - Click to select your name from the autocomplete suggestions.
+    - The system will load your registered activities and group quotas.
+
+3.  **View Available Activities**:
+    - Browse the complete list of open activities.
+    - Look for **Activity Type Badges**:
+      - **เดี่ยว (Individual)**: Single student registration.
+      - **ทีม/คู่ (Team)**: Team-based registration with multiple members.
+    - Check remaining seats before registering.
+
+4.  **Register for an Individual Activity**:
+    - Click the "Register" button on the activity card.
+    - Confirm your choice in the dialog.
+    - Your registration is complete and appears in your registered activities list.
+
+5.  **Register for a Team Activity**:
+    - Click the "Register" button on a team activity card.
+    - A registration modal appears showing:
+      - Maximum team size allowed.
+      - Partner input fields based on team size.
+      - Team name field (optional).
+    - **Option A - Register with Team**:
+      - Enter team name (optional).
+      - Search and select partners using the autocomplete inputs (minimum 2 characters).
+      - Partners are matched by name or student ID.
+      - Only students NOT already registered for this activity appear in suggestions.
+      - Click the check or select partner name to confirm.
+      - Submit to register entire team at once.
+    - **Option B - Register Alone**:
+      - Check "Apply Alone" option.
+      - Submit to register as solo participant.
+
+6.  **View Your Registrations**:
+    - After identification, see all your registered activities.
+    - View:
+      - Activity names and details.
+      - Team names (if applicable).
+      - Registration status.
+    - Check remaining group quotas to see how many more activities you can join.
+
+7.  **Cancel a Registration**:
+    - Click the trash/delete icon next to a registered activity.
+    - Confirm the cancellation in the dialog.
+    - The registration is immediately removed.
+    - Seats are freed for other students.
+    - Remaining quotas update in real-time.
 
 ---
 
@@ -365,41 +453,54 @@ The system uses `sql_app.db` (SQLite) created automatically in the root director
 
 The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 
-### Auth
-- `POST /token`: Login and retrieve JWT token.
-- `POST /admin/logout`: Logout and log the event.
+### Authentication
+- `POST /admin/login`: Login with username and password, retrieve JWT token.
+- `POST /admin/logout`: Logout and log the event (requires authentication).
+- `PUT /admin/change-password`: Change password with validation of old password (requires authentication).
 
-### Admin
-- `GET /admin/api/dashboard`: Get dashboard statistics.
-- `GET /admin/api/students`: List all students.
-- `POST /admin/api/students`: Create a new student.
-- `PUT /admin/api/students/{id}`: Update student details.
-- `DELETE /admin/api/students/{id}`: Remove a student.
-- `GET /admin/api/logs`: View system event logs (Superuser only).
+### Admin Management (Superuser Only)
+- `GET /admin/api/admins`: List all admin accounts.
+- `POST /admin/api/admins`: Create a new admin account with username and password.
+- `DELETE /admin/api/admins/{admin_id}`: Delete an admin account (cannot delete own account).
 
-### Activities
-- `GET /admin/api/activities`: List all activities (includes `type` and `max_team_size`).
-- `POST /admin/create_activity`: Create a new activity (accepts `type` and `max_team_size`).
-- `PUT /admin/activities/{id}`: Update an activity.
+### Activity Management
+- `GET /admin/api/activities`: List all activities with registration counts and remaining seats.
+- `POST /admin/create_activity`: Create a new activity (accepts `type`, `max_team_size`, schedules, and restrictions).
+- `PUT /admin/activities/{id}`: Update an activity properties.
 - `DELETE /admin/activities/{id}`: Delete an activity.
-- `POST /admin/activities/{id}/toggle`: Open/Close registration manually.
-- `DELETE /admin/registrations/{id}`: Remove a student from an activity.
+- `GET /admin/api/activity-detail/{id}`: Get detailed activity information with all registrations.
 
-### Groups
-- `GET /admin/api/activity_groups`: List modifier groups.
-- `POST /admin/api/activity_groups`: Create a new group.
+### Activity Groups
+- `GET /admin/api/activity_groups`: List all activity groups.
+- `POST /admin/api/activity_groups`: Create a new activity group with quota and classroom restrictions.
+- `PUT /admin/api/activity_groups/{group_id}`: Update activity group.
+- `DELETE /admin/api/activity_groups/{group_id}`: Delete activity group.
 
-### Public (Student)
-- `GET /api/activities`: List all open activities with `type`, `max_team_size`, and remaining seats.
-- `GET /api/search_students?q={query}`: Search students by name or number.
-- `GET /api/student_context/{student_number}`: Get student's registered activities and group quotas.
+### Student Management
+- `GET /admin/api/students`: List all students.
+- `POST /admin/api/students/import`: Bulk import students from Excel file (supports 5 and 6-column formats).
+- `DELETE /admin/api/students/{id}`: Remove a student.
+- `GET /admin/api/students/{id}`: Get student details.
+
+### Logs & Monitoring
+- `GET /admin/api/logs`: View system event logs (Superuser only) - includes all admin actions and timestamps.
+
+### Announcements
+- `POST /admin/api/announcements`: Create a system announcement (Superuser only).
+- `GET /api/announcements/active`: Get active announcements visible on public page.
+
+### Public (Student) Endpoints
+- `GET /api/activities`: List all open activities with `type`, `max_team_size`, remaining seats, and group information.
+- `GET /api/search_students?q={query}`: Search students by name or number (minimum 2 characters).
+- `GET /api/student_context/{student_number}`: Get student's registered activities, team names, and remaining group quotas.
 - `POST /api/register`: Register for an activity.
-  - **Body** (for team): `{ name, classroom, number, activity_id, partner_numbers: ["12345", "12346"], team_name: "Team A" }`
+  - **Body**: `{ name, classroom, number, activity_id, team_name: "Team Name", partner_numbers: ["12345", "12346"] }`
 - `DELETE /api/registrations/{id}?student_number={number}`: Cancel a registration (student must own it).
 
-### Export
-- `GET /export/pdf?activity_id={id}`: Export registrations as PDF.
-- `GET /export/excel?activity_id={id}`: Export registrations as Excel.
+### Export Endpoints
+- `GET /export/pdf?activity_id={id}`: Export registrations as a formatted PDF report.
+- `GET /export/excel?activity_id={id}`: Export registrations as an Excel spreadsheet.
+- Both endpoints support filtering by activity or exporting all registrations.
 
 ---
 
@@ -412,137 +513,229 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 - `name`: String, Student Name
 - `number`: String, Student ID Number (e.g., 64001)
 - `classroom`: String, Class (e.g., M.6/1)
-- `sequence_number`: String, Class number (e.g., 1) **[NEW V3.1.5]**
+- `sequence`: Integer, Class sequence number (e.g., 1) - for distinguishing class number from student ID
 
 **activities**
 - `id`: Integer, Primary Key
 - `title`: String, Activity Name
-- `description`: String
+- `description`: String, Activity Description
 - `max_people`: Integer, Quota per activity
 - `status`: String ('open'/'close')
-- `type`: String ('individual'/'team') **[NEW V3]**
-- `max_team_size`: Integer, Max members per team (default 2) **[NEW V3]**
-- `start_time` / `end_time`: DateTime
-- `color`: String, Hex color code
+- `type`: String ('individual'/'team')
+- `max_team_size`: Integer, Max members per team (default 1)
+- `start_time` / `end_time`: DateTime, Automatic open/close times
+- `color`: String, Hex color code for UI display
 - `allowed_classrooms`: String, Comma-separated classroom restrictions
 - `group_id`: Foreign Key linked to `activity_groups`
 
 **activity_groups**
 - `id`: Integer, Primary Key
-- `name`: String (e.g., "Sports")
+- `name`: String, Group name (e.g., "Sports")
 - `quota`: Integer, Max selections allowed from this group per student
 - `allowed_classrooms`: String, Comma-separated classroom restrictions
-- `is_visible`: Boolean
+- `is_visible`: Boolean, Whether group is visible in student interface
 
 **registrations**
 - `id`: Integer, Primary Key
 - `student_id`: FK to `students`
 - `activity_id`: FK to `activities`
-- `team_name`: String, Team/group name for team activities **[NEW V3]**
-- `timestamp`: DateTime of registration
+- `team_name`: String, Team/group name for team activities
+- `status`: String ('registered'/'waitlisted') - registration status
+- `timestamp`: DateTime, Registration time
 
 **admins**
 - `id`: Integer, Primary Key
-- `username`: String
-- `password_hash`: String (Bcrypt)
-- `is_superuser`: Boolean
+- `username`: String, Unique admin username
+- `password_hash`: String, Bcrypt-hashed password
+- `is_superuser`: Boolean, Superuser privileges flag
 
 **admin_logs**
 - `id`: Integer, Primary Key
-- `admin_username`: String (User who performed action)
-- `action`: String (e.g., LOGIN, DELETE_ACTIVITY, REGISTER)
-- `details`: String (Contextual info)
-- `ip_address`: String (Client IP)
-- `timestamp`: DateTime
+- `admin_username`: String, Admin who performed action
+- `action`: String, Action type (e.g., LOGIN, CREATE_ACTIVITY, DELETE_STUDENT)
+- `details`: String, Contextual information about the action
+- `ip_address`: String, Client IP address
+- `timestamp`: DateTime, Action timestamp
+
+**announcements**
+- `id`: Integer, Primary Key
+- `message`: String, Announcement message content
+- `is_active`: Boolean, Whether announcement is visible
+- `color`: String, Color code for visual emphasis (indigo, red, green, etc.)
+- `timestamp`: DateTime, Creation timestamp
+
+**request_logs**
+- `id`: Integer, Primary Key
+- `timestamp`: DateTime, Request timestamp
+- `method`: String, HTTP method (GET, POST, PUT, DELETE, etc.)
+- `path`: String, API endpoint path
+- `status_code`: Integer, HTTP response status code
+- `response_time_ms`: Integer, Response time in milliseconds
+
+**system_metrics**
+- `id`: Integer, Primary Key
+- `timestamp`: DateTime, Metric timestamp
+- `metric_type`: String, Type of metric (e.g., "db_size", "db_health", "api_health")
+- `value`: Integer, Numeric metric value (e.g., size in bytes)
+- `status`: String, Text status (e.g., "up", "down")
 
 ---
 
 ## Version History
 
-### V3.1.5 (Current)
+### V3.2.0 (Current)
+
+**System Monitoring & Analytics**
+- **Request Logging**: All API requests are tracked with method, path, status code, and response time.
+- **System Metrics**: Track database and API health metrics with timestamped records.
+- **Performance Insights**: Monitor response times to identify and optimize bottlenecks.
+
+**System Announcements**
+- **Broadcast Messages**: Create and manage system-wide announcements visible on the public page.
+- **Color-Coded Alerts**: Assign colors to announcements for visual emphasis.
+- **Activation Control**: Enable/disable announcements without deletion.
+
+**Admin Management**
+- **Admin Account Management**: Superusers can now create and delete admin accounts via API.
+- **Password Management**: All admins can change their own passwords with validation.
+- **Improved Access Control**: Clear superuser/staff role separation.
+
+**Enhanced Database Schema**
+- **Registration Status**: Registrations now track status (registered/waitlisted) for future waitlist features.
+- **Sequence Tracking**: Student sequence number field for class-based identification.
+- **Event Tracking**: Dedicated admin_logs table with IP address tracking.
+
+### V3.1.5
 
 **New Student Identification System**
 - **Sequence Number (เลขที่)**: Added a dedicated field to distinguish between Student ID (รหัส) and Class Number (เลขที่).
 - **New Excel Import Format**: Supports a 6-column format (`รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`).
-- **Enhanced Exports**: Registration lists (Excel/PDF) and Student lists now include the "เลขที่" column.
-- **Improved Student Management**: Admins can view and edit the "เลขที่" field directly in the dashboard.
-- **Contact Info Update**: Updated developer contact information in the "About" page.
+- **Enhanced Exports**: Registration lists (Excel/PDF) include the sequence number column.
+- **Improved Student Management**: Admins can view and edit the sequence number field in the dashboard.
 
 ### V3.0
 
 **Team Registration System**
-- **Activity Types**: Activities can now be configured as "Individual" or "Team/Partner".
+- **Activity Types**: Activities can be configured as "Individual" or "Team/Partner".
 - **Max Team Size**: Configurable maximum team members per activity (1-10 members).
-- **Dynamic Partner Selection**: Registration modal shows multiple partner input boxes based on max team size.
-- **Partner Autocomplete Search**: Search for partners by name or student number with dropdown suggestions.
+- **Dynamic Partner Selection**: Registration modal shows partner input boxes based on max team size.
+- **Partner Autocomplete Search**: Search for partners by name or student number.
 - **Team Name**: Optional naming of teams/groups during registration.
-- **Apply Alone**: Option to register for team activities as a solo participant.
-- **Partner Validation**: Backend validates team size limits, duplicate prevention, and partner existence.
-- **Activity Type Badges**: Visual badges on activity cards showing Individual (เดี่ยว) or Team (ทีม/คู่).
+- **Apply Alone**: Option to register for team activities as solo participants.
+- **Partner Validation**: Backend validates team sizes, prevents duplicates, and verifies partner existence.
 
 **Student Registration Cancellation**
-- **Self-Service Cancellation**: Students can cancel their own registrations directly from the UI.
-- **Ownership Validation**: Backend verifies the student owns the registration before allowing deletion.
+- **Self-Service Cancellation**: Students can cancel their own registrations from the UI.
+- **Ownership Validation**: Backend verifies student ownership before allowing deletion.
 - **Confirmation Dialog**: SweetAlert2 confirmation before cancellation.
 - **Real-time Updates**: UI updates immediately after cancellation.
 
 **Enhanced Exports**
-- **Team Name Column**: Excel exports now include the team name column.
-- **Team-Grouped PDF**: PDF exports for team activities sort and group registrations by team name.
-
-**Student Context Display**
-- **Registered Activities**: After entering student ID, view all currently registered activities with team names.
-- **Remaining Quotas**: Display remaining group quotas based on completed registrations.
-- **Quick Cancel Access**: Each registration shows a cancel button.
-
-**Database Updates**
-- Added `type` column to `activities` table (values: 'individual', 'team').
-- Added `max_team_size` column to `activities` table (default: 2).
-- Added `team_name` column to `registrations` table.
+- **Team Name Column**: Excel exports include the team name column.
+- **Team-Grouped PDF**: PDF exports for team activities sort registrations by team name.
 
 ### V2.5
-- **Analytics Dashboard**: Added a dedicated page with 3 major charts:
-    - Daily Registration Trend (Line Chart)
-    - Activity Group Popularity (Doughnut Chart)
-    - Top Classroom Participation (Horizontal Bar Chart)
-- **Real-time Synchronization**: Implemented background polling for student registration (10s) and admin analytics (30s).
-- **SweetAlert2 Integration**: Added professional confirmation dialogs for all destructive admin actions.
-- **Theme Polish**: Improved Group Manager UI visibility in Dark Mode.
-- **Bug Fixes**: Resolved DataTables initialization race condition on the Activity Detail page.
+- **Analytics Dashboard**: Visual charts for registration trends, group popularity, and classroom participation.
+- **Real-time Synchronization**: Background polling for student registration and admin analytics.
+- **SweetAlert2 Integration**: Professional confirmation dialogs for destructive actions.
+- **Theme Polish**: Improved UI visibility in Dark Mode.
 
 ### V2.0
-- **RBAC**: Implemented Role-Based Access Control (Admin vs Staff).
-- **Audit Logs**: Comprehensive logging system for all administrative actions.
+- **RBAC**: Role-Based Access Control (Admin vs Staff).
+- **Audit Logs**: Comprehensive logging for administrative actions.
 - **Enhanced Security**: JWT-based authentication and secure password hashing.
 
 ---
 
 ## Troubleshooting
 
-### "Database is locked"
-SQLite allows limited concurrent writes. If you encounter this during heavy bulk operations, ensure no other process (like a DB browser) has the file open in write mode.
+### Admin Login Issues
 
-### Login Failed
-If `admin` / `admin123` doesn't work, ensure the database initialized correctly. Delete `sql_app.db` and restart the server to re-seed the default admin.
+**Problem**: "Login Failed" message even with correct credentials.
+- **Solution 1**: Verify default admin account exists. If not, delete `sql_app.db` and restart the server to recreate it.
+- **Solution 2**: Check that you're using the correct username and password (default: `admin` / `admin123`).
+- **Solution 3**: Ensure your JWT token hasn't expired - try clearing browser cookies and login again.
 
-### PDF Preview Blocked
-If clicking "Export PDF" doesn't open a new tab, check your browser's pop-up blocker settings and allow pop-ups for your site.
+**Problem**: Can't access admin panel.
+- **Solution**: Make sure you clicked the hidden **©** copyright symbol in the footer, or visit `http://localhost:8000/admin/login` directly.
 
-### Team Activities Not Working
-1. Ensure you've run `python migrate_db.py` to add the new columns.
-2. Verify the activity is set to type "team" in the admin panel.
-3. Check that max_team_size is greater than 1.
+### Database Issues
 
-### Partner Search Not Returning Results
-1. Ensure students have been imported into the system.
-2. Type at least 2 characters to trigger the search.
-3. The search excludes the registering student and already-selected partners.
+**Problem**: "Database is locked" error.
+- **Cause**: SQLite has limited concurrent write support.
+- **Solution**: Ensure no other process has the database open (check file explorer, SQLite browser tools, etc.). Restart the application.
 
-### Activity Type Shows as "Individual" After Saving "Team"
-If updating from V2.x, ensure:
-1. Run `migrate_db.py` to add the type column.
-2. Restart the server after migration.
-3. Edit the activity and re-save with the correct type.
+**Problem**: Database migrations fail.
+- **Solution 1**: Backup your `sql_app.db` file.
+- **Solution 2**: Delete `sql_app.db` and restart the server to create a fresh database.
+- **Solution 3**: If upgrading, ensure you run all migration scripts in order: `migrate_db.py`, then `migrate_sequence.py`.
+
+### Activity Registration Issues
+
+**Problem**: Team activities not working (showing "Individual" instead).
+- **Solution 1**: Ensure you've run `python migrate_db.py` to add `type` and `max_team_size` columns.
+- **Solution 2**: Restart the application after migration.
+- **Solution 3**: Edit the activity in the admin panel and explicitly set "Activity Type" to "Team".
+- **Solution 4**: Verify `max_team_size` is greater than 1 (default should be 2).
+
+**Problem**: Partner search returns no results.
+- **Cause 1**: Not enough characters typed (minimum 2 required).
+- **Cause 2**: Partners already registered for the activity won't appear in suggestions.
+- **Cause 3**: Student database is empty or search term doesn't match student names/IDs.
+- **Solution**: Bulk import students first from the admin Student Management page using an Excel file.
+
+**Problem**: Can't register for activity - "No seats available" message.
+- **Solution**: The activity has reached its quota. Confirm with an admin to increase quota or cancel other registrations.
+
+**Problem**: Student can register for same activity twice.
+- **Cause**: This shouldn't happen - the database has a unique constraint.
+- **Solution**: Log out and log back in. Refresh the page. Contact admin if issue persists.
+
+### Export Issues
+
+**Problem**: PDF export opens blank or crashes.
+- **Solution 1**: Ensure the `frontend/static/fonts/` directory exists with SukhumvitSet font files.
+- **Solution 2**: The export falls back to Helvetica if Thai font unavailable (export will still work, just without Thai font optimization).
+- **Solution 3**: Check browser console for JavaScript errors.
+
+**Problem**: Excel export has incorrect character encoding (Thai text appears garbled).
+- **Cause**: openpyxl encoding issue.
+- **Solution**: Open the Excel file and re-save it with UTF-8 encoding in Excel or Google Sheets.
+
+**Problem**: Pop-up blocker prevents PDF from opening.
+- **Solution**: Check your browser's pop-up blocker settings and allow pop-ups for your site.
+
+### Student Import Issues
+
+**Problem**: "Invalid Excel format" error during student import.
+- **Solution 1**: Verify Excel file has correct columns:
+  - **6-column format**: `รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
+  - **5-column format**: `รหัส`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
+- **Solution 2**: Ensure there are no extra blank columns or rows.
+- **Solution 3**: Save the Excel file as .xlsx format (not .xls or .csv).
+
+**Problem**: Students import but duplicate entries appear.
+- **Cause**: Student ID numbers already exist in the database.
+- **Solution**: Delete existing students first or update the Excel file with unique student IDs.
+
+### Performance Issues
+
+**Problem**: System is slow or unresponsive.
+- **Solution 1**: Check system resources (RAM, CPU) using Task Manager.
+- **Solution 2**: Reduce number of concurrent users.
+- **Solution 3**: Archive old registrations to a backup database if it's very large.
+- **Solution 4**: Disable real-time polling on analytics pages if not needed.
+
+**Problem**: Activities page loads very slowly.
+- **Cause**: Too many activities or registrations in database.
+- **Solution**: Ensure database indices are present. Restart the server and clear any cached data.
+
+### Announcement Issues
+
+**Problem**: Announced messages not appearing on public page.
+- **Solution 1**: Make sure the announcement is marked as `is_active = true` in the database.
+- **Solution 2**: Refresh the page in your browser.
+- **Solution 3**: Clear browser cache (Ctrl+Shift+Delete in most browsers).
 
 ---
 
