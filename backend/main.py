@@ -107,10 +107,33 @@ logger.addHandler(handler)
 
 app = create_app()
 
+import os
+import time
+import asyncio
+
 @app.on_event("startup")
 async def startup_event():
     logger = logging.getLogger("uvicorn")
     logger.info("Application startup: DSNPRU_REG Activity Registration API started")
+    asyncio.create_task(log_system_metrics())
+
+async def log_system_metrics():
+    while True:
+        try:
+            with SessionLocal() as db:
+                # DB Size
+                db_path = "sicday.db"
+                if os.path.exists(db_path):
+                    size = os.path.getsize(db_path)
+                    db.add(models.SystemMetric(metric_type="db_size", value=size))
+                
+                # DB Health (Simple check)
+                db.execute(models.Base.metadata.tables['students'].select().limit(1))
+                db.add(models.SystemMetric(metric_type="db_health", status="healthy"))
+                db.commit()
+        except Exception as e:
+            logging.error(f"Error logging metrics: {e}")
+        await asyncio.sleep(300) # Every 5 minutes
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -119,10 +142,25 @@ async def shutdown_event():
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    logger = logging.getLogger("uvicorn")
-    logger.info(f"Request: {request.method} {request.url}")
+    start_time = time.perf_counter()
     response = await call_next(request)
-    logger.info(f"Response status: {response.status_code}")
+    process_time = int((time.perf_counter() - start_time) * 1000)
+    
+    # Don't log static files or heartbeats to keep DB clean if many
+    if not request.url.path.startswith("/static"):
+        try:
+            with SessionLocal() as db:
+                log = models.RequestLog(
+                    method=request.method,
+                    path=request.url.path,
+                    status_code=response.status_code,
+                    response_time_ms=process_time
+                )
+                db.add(log)
+                db.commit()
+        except Exception as e:
+            logging.error(f"Error logging request to DB: {e}")
+
     return response
 
 
@@ -143,3 +181,7 @@ async def admin_analytics_page(request: Request):
 @app.get("/admin/announcements")
 async def admin_announcements_page(request: Request):
     return templates.TemplateResponse("admin_announcements.html", {"request": request})
+
+@app.get("/admin/platform/status")
+async def admin_platform_status_page(request: Request):
+    return templates.TemplateResponse("admin_status.html", {"request": request})

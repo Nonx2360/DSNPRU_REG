@@ -11,6 +11,11 @@ from .. import models, schemas
 from ..auth import authenticate_admin, create_access_token, get_current_admin, get_current_superuser, get_password_hash, verify_password
 from ..database import get_db
 from ..utils import log_action
+from datetime import datetime, timedelta
+from sqlalchemy import func, case
+import csv
+import io
+from fastapi.responses import StreamingResponse
 
 
 router = APIRouter()
@@ -724,3 +729,168 @@ def delete_announcement(
     db.commit()
     log_action(db, admin.username, "DELETE_ANNOUNCEMENT", f"Deleted announcement ID {ann_id}", request)
     return
+
+# --- Platform Status Endpoints ---
+
+@router.get("/api/platform/status", response_model=schemas.PlatformStatus)
+def get_platform_status(
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin)
+):
+    now = datetime.now()
+    day_ago = now - timedelta(days=1)
+    
+    # DB Size
+    db_size = 0
+    if os.path.exists("sicday.db"):
+        db_size = os.path.getsize("sicday.db")
+        
+    # Stats for last 24h
+    logs_count = db.query(models.RequestLog).filter(models.RequestLog.timestamp >= day_ago).count()
+    avg_resp = db.query(func.avg(models.RequestLog.response_time_ms)).filter(models.RequestLog.timestamp >= day_ago).scalar() or 0.0
+    error_count = db.query(models.RequestLog).filter(
+        models.RequestLog.timestamp >= day_ago,
+        models.RequestLog.status_code >= 400
+    ).count()
+    error_rate = (error_count / logs_count * 100) if logs_count > 0 else 0.0
+    
+    # Uptime % (Based on 5-min metrics in last 24h)
+    expected_metrics = (24 * 60) // 5
+    healthy_metrics = db.query(models.SystemMetric).filter(
+        models.SystemMetric.metric_type == "db_health",
+        models.SystemMetric.status == "healthy",
+        models.SystemMetric.timestamp >= day_ago
+    ).count()
+    # If no metrics yet, assume 100%
+    uptime = (healthy_metrics / expected_metrics * 100) if expected_metrics > 0 and healthy_metrics > 0 else 100.0
+    if healthy_metrics == 0 and db.query(models.SystemMetric).filter(models.SystemMetric.timestamp >= day_ago).count() > 0:
+        uptime = 0.0 # Had metrics but none healthy
+
+    return schemas.PlatformStatus(
+        api_health="healthy",
+        db_health="healthy", # If we can query, it's healthy
+        db_size_bytes=db_size,
+        uptime_percent=min(round(uptime, 2), 100.0),
+        total_requests_24h=logs_count,
+        avg_response_time_24h=round(avg_resp, 2),
+        error_rate_24h=round(error_rate, 2)
+    )
+
+@router.get("/api/platform/metrics", response_model=schemas.DetailedMetrics)
+def get_platform_metrics(
+    days: int = 7,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin)
+):
+    now = datetime.now()
+    start_date = now - timedelta(days=days)
+    
+    # Determine grouping (by hour if <= 2 days, by day if more)
+    if days <= 2:
+        group_func = func.strftime('%Y-%m-%d %H:00', models.RequestLog.timestamp)
+        metric_group_func = func.strftime('%Y-%m-%d %H:00', models.SystemMetric.timestamp)
+    else:
+        group_func = func.date(models.RequestLog.timestamp)
+        metric_group_func = func.date(models.SystemMetric.timestamp)
+
+    # Request Trend
+    req_trend = (
+        db.query(group_func.label("label"), func.count(models.RequestLog.id).label("value"))
+        .filter(models.RequestLog.timestamp >= start_date)
+        .group_by("label")
+        .order_by("label")
+        .all()
+    )
+    
+    # Response Time Trend
+    resp_trend = (
+        db.query(group_func.label("label"), func.avg(models.RequestLog.response_time_ms).label("value"))
+        .filter(models.RequestLog.timestamp >= start_date)
+        .group_by("label")
+        .order_by("label")
+        .all()
+    )
+    
+    # Error Rate Trend
+    error_trend_raw = (
+        db.query(
+            group_func.label("label"), 
+            func.count(models.RequestLog.id).label("total"),
+            func.sum(case((models.RequestLog.status_code >= 400, 1), else_=0)).label("errors")
+        )
+        .filter(models.RequestLog.timestamp >= start_date)
+        .group_by("label")
+        .order_by("label")
+        .all()
+    )
+    error_trend = []
+    for r in error_trend_raw:
+        rate = (r.errors / r.total * 100) if r.total > 0 else 0
+        error_trend.append(schemas.GenericTrendPoint(label=r.label, value=round(rate, 2)))
+
+    # DB Size Trend
+    db_size_trend = (
+        db.query(metric_group_func.label("label"), func.avg(models.SystemMetric.value).label("value"))
+        .filter(models.SystemMetric.metric_type == "db_size", models.SystemMetric.timestamp >= start_date)
+        .group_by("label")
+        .order_by("label")
+        .all()
+    )
+
+    # Endpoint Breakdown
+    endpoint_stats = (
+        db.query(
+            models.RequestLog.path,
+            models.RequestLog.method,
+            func.count(models.RequestLog.id).label("count"),
+            func.avg(models.RequestLog.response_time_ms).label("avg_resp"),
+            func.sum(case((models.RequestLog.status_code >= 400, 1), else_=0)).label("errors")
+        )
+        .filter(models.RequestLog.timestamp >= start_date)
+        .group_by(models.RequestLog.path, models.RequestLog.method)
+        .order_by(func.count(models.RequestLog.id).desc())
+        .limit(20)
+        .all()
+    )
+    
+    breakdown = []
+    for e in endpoint_stats:
+        rate = (e.errors / e.count * 100) if e.count > 0 else 0
+        breakdown.append(schemas.EndpointMetric(
+            path=e.path,
+            method=e.method,
+            count=e.count,
+            avg_response_time=round(e.avg_resp, 2),
+            error_rate=round(rate, 2)
+        ))
+
+    return schemas.DetailedMetrics(
+        request_trend=[schemas.GenericTrendPoint(label=r.label, value=float(r.value)) for r in req_trend],
+        response_time_trend=[schemas.GenericTrendPoint(label=r.label, value=float(r.value)) for r in resp_trend],
+        error_rate_trend=error_trend,
+        db_size_trend=[schemas.GenericTrendPoint(label=r.label, value=float(r.value or 0)) for r in db_size_trend],
+        endpoint_breakdown=breakdown
+    )
+
+@router.get("/api/platform/export")
+def export_platform_status(
+    days: int = 30,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin)
+):
+    start_date = datetime.now() - timedelta(days=days)
+    logs = db.query(models.RequestLog).filter(models.RequestLog.timestamp >= start_date).order_by(models.RequestLog.timestamp.desc()).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Timestamp", "Method", "Path", "Status Code", "Response Time (ms)"])
+    
+    for log in logs:
+        writer.writerow([log.timestamp.isoformat(), log.method, log.path, log.status_code, log.response_time_ms])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=platform_status_report_{datetime.now().strftime('%Y%m%d')}.csv"}
+    )

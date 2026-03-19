@@ -227,3 +227,49 @@ class AnalyticsData(BaseModel):
     trend: List[TrendPoint]
     groups: List[GroupStat]
     classrooms: List[ClassStat]
+
+class RequestLog(BaseModel):
+    id: int
+    timestamp: datetime
+    method: str
+    path: str
+    status_code: int
+    response_time_ms: int
+
+    model_config = {"from_attributes": True}
+
+class SystemMetric(BaseModel):
+    id: int
+    timestamp: datetime
+    metric_type: str
+    value: Optional[int] = None
+    status: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+class PlatformStatus(BaseModel):
+    api_health: str
+    db_health: str
+    db_size_bytes: int
+    uptime_percent: float
+    total_requests_24h: int
+    avg_response_time_24h: float
+    error_rate_24h: float
+
+class EndpointMetric(BaseModel):
+    path: str
+    method: str
+    count: int
+    avg_response_time: float
+    error_rate: float
+
+class GenericTrendPoint(BaseModel):
+    label: str
+    value: float
+
+class DetailedMetrics(BaseModel):
+    request_trend: List[GenericTrendPoint]
+    response_time_trend: List[GenericTrendPoint]
+    error_rate_trend: List[GenericTrendPoint]
+    db_size_trend: List[GenericTrendPoint]
+    endpoint_breakdown: List[EndpointMetric]

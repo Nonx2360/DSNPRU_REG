@@ -63,7 +63,7 @@ class Registration(Base):
     activity_id = Column(Integer, ForeignKey("activities.id"), nullable=False)
     team_name = Column(String, nullable=True) # New field for Team Registration
     status = Column(String, default="registered") # registered / waitlisted
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.now)
 
     student = relationship("Student", back_populates="registrations")
     activity = relationship("Activity", back_populates="registrations")
@@ -87,7 +87,7 @@ class AdminLog(Base):
     action = Column(String, nullable=False)
     details = Column(String, nullable=True)
     ip_address = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.now)
 
 class Announcement(Base):
     __tablename__ = "announcements"
@@ -96,4 +96,23 @@ class Announcement(Base):
     message = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     color = Column(String, default="indigo")
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.now)
+
+class RequestLog(Base):
+    __tablename__ = "request_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.now, index=True)
+    method = Column(String, nullable=False)
+    path = Column(String, nullable=False)
+    status_code = Column(Integer, nullable=False)
+    response_time_ms = Column(Integer, nullable=False)
+
+class SystemMetric(Base):
+    __tablename__ = "system_metrics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.now, index=True)
+    metric_type = Column(String, index=True) # e.g. "db_size", "db_health", "api_health"
+    value = Column(Integer, nullable=True) # numeric value (e.g. size in bytes)
+    status = Column(String, nullable=True) # text status (e.g. "up", "down")

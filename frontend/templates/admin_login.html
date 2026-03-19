@@ -1,11 +1,9 @@
-{% extends "base.html" %}
-{% block title %}เข้าสู่ระบบผู้ดูแล - DSNPRU_REG{% endblock %}
-{% block content %}
+{% extends "base.html" %} {% block title %}Admin_Login{% endblock %} {% block content %}
 <section x-data="adminLoginPage()">
     <div class="relative max-w-md mx-auto mt-16 z-10">
         <!-- Decorative Glow -->
         <div class="absolute -inset-1 bg-gradient-to-r from-rose-500/20 to-orange-500/20 rounded-[2rem] blur-xl opacity-50"></div>
-        
+
         <div class="relative bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-xl border border-slate-200/80 dark:border-slate-800 px-8 py-10">
             <div class="flex justify-center mb-6">
                 <!-- Larger Logo -->
@@ -13,30 +11,27 @@
                     <img src="/static/img/logo.png" alt="Logo" class="w-full h-full object-contain drop-shadow-sm">
                 </div>
             </div>
-            
+
             <div class="text-center mb-8">
-                <h1 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight">เข้าสู่ระบบผู้ดูแล</h1>
+                <h1 class="text-2xl font-black text-slate-800 dark:text-white tracking-tight">เข้าสู่ระบบAdmin</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    DSNPRU REGISTRATION SYSTEM
+
                 </p>
             </div>
-            
+
             <div class="space-y-5">
                 <div class="relative group">
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide transition-colors group-focus-within:text-rose-500">ชื่อผู้ใช้</label>
-                    <input type="text" x-model="username"
-                        class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-4 py-3 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all shadow-sm placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                    <input type="text" x-model="username" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-4 py-3 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all shadow-sm placeholder:text-slate-300 dark:placeholder:text-slate-600"
                         placeholder="admin">
                 </div>
                 <div class="relative group">
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide transition-colors group-focus-within:text-rose-500">รหัสผ่าน</label>
-                    <input type="password" x-model="password"
-                        class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-4 py-3 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all shadow-sm placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                    <input type="password" x-model="password" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-4 py-3 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all shadow-sm placeholder:text-slate-300 dark:placeholder:text-slate-600"
                         placeholder="••••••••">
                 </div>
-                
-                <button type="button" @click="login"
-                    class="w-full mt-4 inline-flex justify-center items-center px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 font-bold tracking-wide text-white text-sm shadow-md shadow-rose-500/30 active:scale-95 transition-all">
+
+                <button type="button" @click="login" class="w-full mt-4 inline-flex justify-center items-center px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 font-bold tracking-wide text-white text-sm shadow-md shadow-rose-500/30 active:scale-95 transition-all">
                     LOG IN
                 </button>
             </div>
