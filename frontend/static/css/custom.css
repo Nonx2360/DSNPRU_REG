@@ -1,3 +1,15 @@
+/* FONTS */
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; }
+@font-face { font-family: 'ChakraPetch'; src: url('/static/fonts/ChakraPetch-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; }
+
 /* DESIGN TOKENS */
 :root {
   --color-primary: #1A2B4C; /* Deep Ink Blue */
@@ -19,8 +31,8 @@
   --color-danger: #B82C2C;
   --color-danger-bg: #FDE8E8;
   
-  --font-heading: 'Merriweather', serif;
-  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'ChakraPetch', sans-serif;
+  --font-sans: 'ChakraPetch', sans-serif;
   
   --space-xs: 4px;
   --space-sm: 8px;

@@ -76,19 +76,19 @@ def export_pdf(
     # Register SukhumvitSet font for Thai text support
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     fonts_dir = os.path.join(base_dir, "frontend", "static", "fonts")
-    font_name = "SukhumvitSet"
+    font_name = "ChakraPetch"
     
     try:
-        font_weights = ["Medium", "Text", "Regular", "SemiBold", "Bold"]
+        font_weights = ["Regular", "Medium", "SemiBold", "Bold"]
         font_path = None
         for weight in font_weights:
-            test_path = os.path.join(fonts_dir, f"SukhumvitSet-{weight}.ttf")
+            test_path = os.path.join(fonts_dir, f"ChakraPetch-{weight}.ttf")
             if os.path.exists(test_path):
                 font_path = test_path
                 break
         
         if font_path:
-            pdfmetrics.registerFont(TTFont("SukhumvitSet", font_path))
+            pdfmetrics.registerFont(TTFont("ChakraPetch", font_path))
         else:
             font_name = "Helvetica"
     except Exception:
@@ -215,19 +215,19 @@ def export_students_pdf(
     # Register SukhumvitSet font for Thai text support
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     fonts_dir = os.path.join(base_dir, "frontend", "static", "fonts")
-    font_name = "SukhumvitSet"
+    font_name = "ChakraPetch"
     
     try:
-        font_weights = ["Medium", "Text", "Regular", "SemiBold", "Bold"]
+        font_weights = ["Regular", "Medium", "SemiBold", "Bold"]
         font_path = None
         for weight in font_weights:
-            test_path = os.path.join(fonts_dir, f"SukhumvitSet-{weight}.ttf")
+            test_path = os.path.join(fonts_dir, f"ChakraPetch-{weight}.ttf")
             if os.path.exists(test_path):
                 font_path = test_path
                 break
         
         if font_path:
-            pdfmetrics.registerFont(TTFont("SukhumvitSet", font_path))
+            pdfmetrics.registerFont(TTFont("ChakraPetch", font_path))
         else:
             font_name = "Helvetica"
     except Exception:
