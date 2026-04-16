@@ -7,7 +7,7 @@
             activities: [],
             groups: [],
             classrooms: [],
-            form: { title: '', description: '', max_people: 30, status: 'open', group_id: null, allowed_classrooms: [], start_time: null, end_time: null, color: '#e11d48', type: 'individual', max_team_size: 1 },
+            form: { title: '', description: '', max_people: 30, status: 'open', group_id: null, allowed_classrooms: [], start_time: null, end_time: null, color: '#D95D39', type: 'individual', max_team_size: 1 },
             groupForm: { name: '', quota: 3, allowed_classrooms: [], is_visible: true },
             showGroupManager: false,
             async load() {
@@ -36,8 +36,8 @@
                         headers: { Authorization: 'Bearer ' + token }
                     });
                     this.activities.push({ ...res.data, allowed_classrooms: res.data.allowed_classrooms ? res.data.allowed_classrooms.split(',') : [] });
-                    this.form = { title: '', description: '', max_people: 30, status: 'open', group_id: null, allowed_classrooms: [], start_time: null, end_time: null, color: '#e11d48', type: 'individual', max_team_size: 1 };
-                    Toastify({ text: 'สร้างกิจกรรมสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                    this.form = { title: '', description: '', max_people: 30, status: 'open', group_id: null, allowed_classrooms: [], start_time: null, end_time: null, color: '#D95D39', type: 'individual', max_team_size: 1 };
+                    Toastify({ text: 'สร้างกิจกรรมสำเร็จ', backgroundColor: '#10b981' }).showToast();
                 } catch (e) {
                     Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างกิจกรรมได้', 'error');
                 }
@@ -52,7 +52,7 @@
                     this.groups.push({ ...res.data, allowed_classrooms: res.data.allowed_classrooms ? res.data.allowed_classrooms.split(',') : [] });
                     this.groupForm.name = '';
                     this.groupForm.allowed_classrooms = [];
-                    Toastify({ text: 'สร้างกลุ่มสำเร็จ', backgroundColor: '#16a34a' }).showToast();
+                    Toastify({ text: 'สร้างกลุ่มสำเร็จ', backgroundColor: '#10b981' }).showToast();
                 } catch (e) {
                     Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างกลุ่มได้', 'error');
                 }
@@ -63,7 +63,7 @@
                     text: 'กิจกรรมในกลุ่มนี้จะไม่ถูกลบแต่จะไม่มีกลุ่ม',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#e11d48',
+                    confirmButtonColor: '#D95D39',
                     confirmButtonText: 'ยืนยันการลบ',
                     cancelButtonText: 'ยกเลิก'
                 });
@@ -75,8 +75,8 @@
                         headers: { Authorization: 'Bearer ' + token }
                     });
                     this.groups = this.groups.filter(g => g.id !== groupId);
-                    this.load(); // Refresh activities to clear group info
-                    Toastify({ text: 'ลบกลุ่มสำเร็จ', backgroundColor: '#e11d48' }).showToast();
+                    this.load();
+                    Toastify({ text: 'ลบกลุ่มสำเร็จ', backgroundColor: '#D95D39' }).showToast();
                 } catch (e) {
                     Swal.fire('ผิดพลาด', 'ไม่สามารถลบกลุ่มได้', 'error');
                 }
@@ -88,7 +88,7 @@
                     text: `คุณต้องการ${action}กิจกรรม "${activity.title}" ใช่หรือไม่?`,
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonColor: activity.status === 'open' ? '#64748b' : '#10b981',
+                    confirmButtonColor: activity.status === 'open' ? '#a1a1aa' : '#10b981',
                     confirmButtonText: 'ยืนยัน',
                     cancelButtonText: 'ยกเลิก'
                 });
@@ -101,7 +101,7 @@
                     });
                     const idx = this.activities.findIndex(a => a.id === activity.id);
                     if (idx !== -1) this.activities[idx] = res.data;
-                    Toastify({ text: `เปลี่ยนสถานะเป็น ${res.data.status === 'open' ? 'เปิด' : 'ปิด'} เรียบร้อย`, backgroundColor: '#4f46e5' }).showToast();
+                    Toastify({ text: `เปลี่ยนสถานะเป็น ${res.data.status === 'open' ? 'เปิด' : 'ปิด'} เรียบร้อย`, backgroundColor: '#3b82f6' }).showToast();
                 } catch (e) {
                     Swal.fire('ผิดพลาด', 'ไม่สามารถเปลี่ยนสถานะได้', 'error');
                 }
@@ -112,7 +112,7 @@
                     text: `ชื่อกิจกรรม: ${activity.title}\nการลบนี้จะไม่สามารถย้อนคืนได้ และข้อมูลการสมัครทั้งหมดจะหายไป`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#e11d48',
+                    confirmButtonColor: '#D95D39',
                     confirmButtonText: 'ยืนยันการลบ',
                     cancelButtonText: 'ยกเลิก'
                 });
@@ -124,7 +124,7 @@
                         headers: { Authorization: 'Bearer ' + token }
                     });
                     this.activities = this.activities.filter(a => a.id !== activity.id);
-                    Toastify({ text: 'ลบกิจกรรมสำเร็จ', backgroundColor: '#e11d48' }).showToast();
+                    Toastify({ text: 'ลบกิจกรรมสำเร็จ', backgroundColor: '#D95D39' }).showToast();
                 } catch (e) {
                     Swal.fire('ผิดพลาด', 'ไม่สามารถลบกิจกรรมได้', 'error');
                 }
@@ -135,237 +135,214 @@
 {% endblock %}
 {% block content %}
 <section x-data="adminActivitiesPage()" x-init="load()">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+    <header class="mb-lg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
         <div>
-            <h1 class="text-2xl font-semibold">จัดการกิจกรรม</h1>
-            <p class="text-xs text-slate-500 mt-1">ตั้งค่ากิจกรรมและกลุ่มกิจกรรมสำหรับนักเรียน</p>
+            <h1 style="margin: 0;">จัดการกิจกรรม</h1>
+            <p class="text-muted" style="margin-top: var(--space-xs); font-size: 0.75rem;">ตั้งค่ากิจกรรมและกลุ่มกิจกรรมสำหรับนักเรียน</p>
         </div>
-        <div class="flex flex-wrap gap-2 text-[11px] sm:text-xs">
-            <button @click="showGroupManager = !showGroupManager"
-                class="px-4 py-2 rounded-xl bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800 transition font-semibold shadow-sm flex items-center gap-1.5">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div style="display: flex; gap: var(--space-sm); align-items: center;">
+            <button @click="showGroupManager = !showGroupManager" class="btn btn--outline" style="font-size: 0.75rem; color: var(--color-warning);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
                 <span x-text="showGroupManager ? 'ปิดจัดการกลุ่ม' : 'จัดการกลุ่มกิจกรรม'"></span>
             </button>
-            <a href="/admin/dashboard"
-                class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-semibold shadow-sm flex items-center">กลับแดชบอร์ด</a>
+            <a href="/admin/dashboard" class="btn btn--outline" style="font-size: 0.75rem;">กลับแดชบอร์ด</a>
         </div>
-    </div>
+    </header>
 
     <!-- Group Manager -->
-    <div x-show="showGroupManager" x-collapse
-        class="mb-8 p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
-        <h2 class="text-sm font-bold uppercase tracking-widest text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
-            <div class="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-md">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div x-show="showGroupManager" x-cloak class="card mb-xl border-dashed">
+        <h2 class="text-muted mb-md" style="font-size: 0.875rem; letter-spacing: 1px; display: flex; align-items: center; gap: var(--space-sm); text-transform: uppercase;">
+            <div class="badge badge--warning border-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
             </div>
             จัดการกลุ่มกิจกรรม
         </h2>
-        <div class="flex flex-col gap-4 mb-4">
-            <div class="flex flex-col sm:flex-row gap-2">
-                <input type="text" x-model="groupForm.name" placeholder="ชื่อกลุ่มใหม่"
-                    class="flex-1 rounded-md border-rose-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-3 py-1.5 focus:ring-rose-500">
-                <div class="flex items-center gap-2">
-                    <label class="text-[10px] text-rose-500 dark:text-rose-400 font-medium">โควตา:</label>
-                    <input type="number" x-model.number="groupForm.quota" min="1" max="10"
-                        class="w-16 rounded-md border-rose-200 dark:border-slate-700 dark:bg-slate-900 text-sm px-2 py-1.5 focus:ring-rose-500">
-                </div>
-                <div class="flex items-center gap-2 px-2">
-                    <label
-                        class="text-[10px] text-rose-500 dark:text-rose-400 font-medium whitespace-nowrap">แสดงผล:</label>
-                    <input type="checkbox" x-model="groupForm.is_visible"
-                        class="rounded border-rose-200 dark:border-slate-700 text-rose-600 focus:ring-rose-500">
-                </div>
-                <button @click="createGroup"
-                    class="px-4 py-1.5 bg-rose-600 text-white rounded-md text-sm hover:bg-rose-700 whitespace-nowrap shadow-sm">
-                    เพิ่มกลุ่ม
-                </button>
+
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-md); align-items: center; margin-bottom: var(--space-md);">
+            <div class="form-group" style="margin: 0; flex: 1; min-width: 200px;">
+                <input type="text" x-model="groupForm.name" class="form-input" placeholder="ชื่อกลุ่มใหม่">
             </div>
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] text-rose-500 dark:text-rose-400 font-medium">จำกัดห้องเรียน
-                    (เว้นว่างหากให้เข้าได้ทุกห้อง):</label>
-                <div
-                    class="flex flex-wrap gap-2 p-2 bg-white dark:bg-slate-900/50 rounded-md border border-rose-200 dark:border-slate-700">
-                    <template x-for="cls in classrooms" :key="cls">
-                        <label class="flex items-center gap-1 text-xs cursor-pointer hover:text-rose-600 transition">
-                            <input type="checkbox" :value="cls" x-model="groupForm.allowed_classrooms"
-                                class="rounded border-rose-200 dark:border-slate-700 text-rose-600 focus:ring-rose-500">
-                            <span x-text="cls" class="dark:text-slate-300"></span>
-                        </label>
-                    </template>
-                </div>
+            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                <label class="form-label" style="margin: 0;">โควตา:</label>
+                <input type="number" x-model.number="groupForm.quota" min="1" max="10" class="form-input" style="width: 60px; padding: 4px;">
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                <label class="form-label" style="margin: 0;">แสดงผล:</label>
+                <input type="checkbox" x-model="groupForm.is_visible" style="cursor: pointer;">
+            </div>
+            <button @click="createGroup" class="btn btn--accent" style="padding: 6px 12px; font-size: 0.75rem;">เพิ่มกลุ่ม</button>
+        </div>
+        
+        <div class="form-group mb-md">
+            <label class="form-label">จำกัดห้องเรียน (เว้นว่างหากให้เข้าได้ทุกห้อง):</label>
+            <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); background: var(--color-background); padding: var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-sm);">
+                <template x-for="cls in classrooms" :key="cls">
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer;">
+                        <input type="checkbox" :value="cls" x-model="groupForm.allowed_classrooms">
+                        <span x-text="cls" class="text-muted"></span>
+                    </label>
+                </template>
             </div>
         </div>
-        <div class="flex flex-wrap gap-2">
+
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px dashed var(--color-border);">
             <template x-for="group in groups" :key="group.id">
-                <div
-                    class="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 rounded-full text-xs shadow-sm">
-                    <span x-text="group.name" class="font-medium dark:text-slate-200"></span>
-                    <span class="text-[10px] text-rose-400 dark:text-rose-500"
-                        x-text="'(โควตา: ' + group.quota + ')'"></span>
-                    <span x-show="!group.is_visible"
-                        class="text-[10px] text-rose-300 dark:text-slate-500 italic">(ซ่อน)</span>
-                    <span x-show="group.allowed_classrooms" class="text-[10px] text-rose-500 dark:text-rose-400/80"
-                        x-text="'[' + group.allowed_classrooms + ']'"></span>
-                    <button @click="removeGroup(group.id)"
-                        class="text-rose-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 ml-1 transition">&times;</button>
+                <div class="badge" style="display: flex; align-items: center; gap: var(--space-xs);">
+                    <span x-text="group.name" style="font-weight: 700;"></span>
+                    <span class="text-muted" x-text="'(โควตา: ' + group.quota + ')'"></span>
+                    <span x-show="!group.is_visible" style="font-style: italic; opacity: 0.6;">(ซ่อน)</span>
+                    <span x-show="group.allowed_classrooms.length" class="text-danger" x-text="'[' + group.allowed_classrooms + ']'"></span>
+                    <button @click="removeGroup(group.id)" style="background: transparent; border: none; font-size: 1rem; line-height: 1; cursor: pointer; color: var(--color-danger); opacity: 0.7;">&times;</button>
                 </div>
             </template>
+            <div x-show="groups.length === 0" class="text-muted" style="font-size: 0.75rem; width: 100%;">ไม่มีกลุ่มกิจกรรม</div>
         </div>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-6 mb-8">
-        <div
-            class="md:col-span-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4 h-fit">
-            <h2 class="text-sm font-bold uppercase tracking-widest text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
-                <div class="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
+    <div style="display: grid; grid-template-columns: 1fr; gap: var(--space-xl);">
+        @media (min-width: 900px) { ... handled inline below by applying custom flex setup }
+        <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-lg);">
+            
+            <!-- Left Pane: Create Form -->
+            <div class="card" style="flex: 1; min-width: 300px; max-width: 400px; height: fit-content; border: 2px solid var(--color-border);">
+                <h2 class="text-muted mb-md" style="font-size: 0.875rem; letter-spacing: 1px; display: flex; align-items: center; gap: var(--space-sm); text-transform: uppercase;">
+                    <div class="badge badge--success border-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                    </div>
+                    สร้างกิจกรรมใหม่
+                </h2>
+                
+                <div class="form-group">
+                    <label class="form-label">ชื่อกิจกรรม</label>
+                    <input type="text" x-model="form.title" class="form-input">
                 </div>
-                สร้างกิจกรรมใหม่
-            </h2>
-            <div>
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">ชื่อกิจกรรม</label>
-                <input type="text" x-model="form.title"
-                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">กลุ่มกิจกรรม</label>
-                <select x-model.number="form.group_id"
-                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                    <option :value="null">-- ไม่มีกลุ่ม --</option>
-                    <template x-for="group in groups" :key="group.id">
-                        <option :value="group.id" x-text="group.name"></option>
-                    </template>
-                </select>
-            </div>
-            <div>
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">รายละเอียด</label>
-                <textarea x-model="form.description"
-                    class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm"></textarea>
-            </div>
-            <div>
-                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">จำกัดห้องเรียน (เว้นว่าง = ทุกห้อง)</label>
-                <div
-                    class="flex flex-wrap gap-2 p-3 bg-slate-50/50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 max-h-32 overflow-y-auto">
-                    <template x-for="cls in classrooms" :key="cls">
-                        <label class="flex items-center gap-1.5 text-xs cursor-pointer hover:text-rose-600 transition font-medium">
-                            <input type="checkbox" :value="cls" x-model="form.allowed_classrooms"
-                                class="rounded border-slate-300 dark:border-slate-600 text-rose-600 focus:ring-rose-500 cursor-pointer">
-                            <span x-text="cls" class="dark:text-slate-300"></span>
-                        </label>
-                    </template>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">ประเภทกิจกรรม</label>
-                    <select x-model="form.type" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                        <option value="individual">เดี่ยว</option>
-                        <option value="team">ทีม/คู่</option>
+                
+                <div class="form-group">
+                    <label class="form-label">กลุ่มกิจกรรม</label>
+                    <select x-model.number="form.group_id" class="form-input">
+                        <option :value="null">-- ไม่มีกลุ่ม --</option>
+                        <template x-for="group in groups" :key="group.id">
+                            <option :value="group.id" x-text="group.name"></option>
+                        </template>
                     </select>
                 </div>
-                <div x-show="form.type === 'team'" x-transition>
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">จำนวนคนต่อทีม</label>
-                    <input type="number" x-model.number="form.max_team_size" min="2" max="10"
-                        class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
+                
+                <div class="form-group">
+                    <label class="form-label">รายละเอียด</label>
+                    <textarea x-model="form.description" class="form-input" style="min-height: 80px;"></textarea>
                 </div>
+                
+                <div class="form-group">
+                    <label class="form-label">จำกัดห้องเรียน (เว้นว่าง = ทุกห้อง)</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm); background: var(--color-background); padding: var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-sm); max-height: 120px; overflow-y: auto;">
+                        <template x-for="cls in classrooms" :key="cls">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer;">
+                                <input type="checkbox" :value="cls" x-model="form.allowed_classrooms">
+                                <span x-text="cls" class="text-muted"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                    <div class="form-group">
+                        <label class="form-label">ประเภทกิจกรรม</label>
+                        <select x-model="form.type" class="form-input">
+                            <option value="individual">เดี่ยว</option>
+                            <option value="team">ทีม/คู่</option>
+                        </select>
+                    </div>
+                    <div class="form-group" x-show="form.type === 'team'" x-cloak>
+                        <label class="form-label">จำนวนคนต่อทีม</label>
+                        <input type="number" x-model.number="form.max_team_size" min="2" max="10" class="form-input">
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                    <div class="form-group">
+                        <label class="form-label">วันเริ่ม</label>
+                        <input type="datetime-local" x-model="form.start_time" class="form-input" style="font-size: 0.75rem;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">วันสิ้นสุด</label>
+                        <input type="datetime-local" x-model="form.end_time" class="form-input" style="font-size: 0.75rem;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: var(--space-md);">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">จำนวนรับสูงสุด</label>
+                        <input type="number" x-model.number="form.max_people" min="1" class="form-input">
+                    </div>
+                    <div class="form-group" style="width: 60px;">
+                        <label class="form-label">สีน้ำ</label>
+                        <input type="color" x-model="form.color" class="form-input" style="padding: 2px; cursor: pointer; height: 38px;">
+                    </div>
+                </div>
+
+                <button type="button" @click="createActivity" class="btn btn--accent" style="width: 100%; margin-top: var(--space-sm);">
+                    บันทึกกิจกรรม
+                </button>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">วันเริ่ม</label>
-                    <input type="datetime-local" x-model="form.start_time"
-                        class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-[11px] px-3 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">วันสิ้นสุด</label>
-                    <input type="datetime-local" x-model="form.end_time"
-                        class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-[11px] px-3 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                </div>
-            </div>
-            <div class="flex gap-3">
-                <div class="flex-1">
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">จำนวนรับสูงสุด</label>
-                    <input type="number" x-model.number="form.max_people" min="1"
-                        class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                </div>
-                <div class="w-20">
-                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">สีนำ</label>
-                    <input type="color" x-model="form.color"
-                        class="w-full h-11 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 p-1 cursor-pointer outline-none focus:ring-2 focus:ring-rose-500/20">
-                </div>
-            </div>
-            <button type="button" @click="createActivity"
-                class="w-full mt-4 inline-flex justify-center items-center px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold tracking-wide shadow-md shadow-rose-500/20 active:scale-95 transition-all">
-                บันทึกกิจกรรม
-            </button>
-        </div>
-        <div class="md:col-span-2">
-            <div class="grid sm:grid-cols-2 gap-4">
-                <template x-for="activity in activities" :key="activity.id">
-                    <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow group">
-                        <!-- Top Accent Line -->
-                        <div class="absolute top-0 left-0 right-0 h-1.5 w-full" :style="`background-color: ${activity.color}`"></div>
-                        
-                        <div class="flex flex-col gap-1 pr-12 mt-1">
-                            <span x-show="activity.group_name" x-text="activity.group_name"
-                                class="w-fit mb-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-[10px] font-bold tracking-wider text-slate-500 uppercase"></span>
-                            <div class="text-[15px] font-bold text-slate-800 dark:text-slate-100 leading-snug" x-text="activity.title"></div>
+
+            <!-- Right Pane: List Activities -->
+            <div style="flex: 2; min-width: 300px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-md);">
+                    <template x-for="activity in activities" :key="activity.id">
+                        <div class="card" style="position: relative; padding-top: var(--space-lg); display: flex; flex-direction: column;">
+                            <!-- Top Decor Line -->
+                            <div style="position: absolute; top: -1px; left: -1px; right: -1px; height: 6px; border-radius: var(--radius-md) var(--radius-md) 0 0;" :style="`background-color: ${activity.color}`"></div>
                             
-                            <!-- Status Badge Positioned Top Right -->
-                            <div class="absolute top-5 right-5">
-                                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shadow-sm border"
-                                    :class="activity.status === 'open' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800' : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700'">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-xs);">
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <span x-show="activity.group_name" x-text="activity.group_name" class="badge"></span>
+                                    <h3 style="margin: 0; font-size: 1.1rem; padding-right: 50px;" x-text="activity.title"></h3>
+                                </div>
+                                
+                                <span class="badge" style="position: absolute; top: var(--space-md); right: var(--space-md);" :class="activity.status === 'open' ? 'badge--success border-none' : 'badge--warning border-none'">
                                     <span x-text="activity.status === 'open' ? 'เปิด' : 'ปิด'"></span>
                                 </span>
                             </div>
-                        </div>
 
-                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed" x-text="activity.description || 'ไม่มีคำอธิบาย'"></div>
-                        
-                        <div class="mt-2 flex flex-wrap gap-1.5">
-                            <template x-if="activity.allowed_classrooms && activity.allowed_classrooms.length > 0 && activity.allowed_classrooms[0] !== ''">
-                                <span class="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 px-2 py-1 rounded-md text-indigo-600 dark:text-indigo-400 font-medium"
-                                    x-text="'ฉพาะห้อง: ' + activity.allowed_classrooms"></span>
-                            </template>
-                            <template x-if="activity.start_time">
-                                <span class="text-[10px] bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 px-2 py-1 rounded-md text-emerald-600 dark:text-emerald-400 font-medium"
-                                    x-text="'เปิด: ' + new Date(activity.start_time).toLocaleString('th-TH')"></span>
-                            </template>
-                            <template x-if="activity.end_time">
-                                <span class="text-[10px] bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-800 px-2 py-1 rounded-md text-rose-600 dark:text-rose-400 font-medium"
-                                    x-text="'ปิด: ' + new Date(activity.end_time).toLocaleString('th-TH')"></span>
-                            </template>
+                            <p class="text-muted" style="font-size: 0.75rem; margin-bottom: var(--space-sm); line-height: 1.4;" x-text="activity.description || 'ไม่มีคำอธิบาย'"></p>
+                            
+                            <div style="display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-bottom: var(--space-sm);">
+                                <template x-if="activity.allowed_classrooms && activity.allowed_classrooms.length > 0 && activity.allowed_classrooms[0] !== ''">
+                                    <span class="badge badge--info border-none" style="font-size: 0.65rem;" x-text="'เฉพาะห้อง: ' + activity.allowed_classrooms"></span>
+                                </template>
+                                <template x-if="activity.start_time">
+                                    <span class="badge badge--success border-none" style="font-size: 0.65rem;" x-text="'เปิด: ' + new Date(activity.start_time).toLocaleString('th-TH')"></span>
+                                </template>
+                                <template x-if="activity.end_time">
+                                    <span class="badge badge--danger border-none" style="font-size: 0.65rem;" x-text="'ปิด: ' + new Date(activity.end_time).toLocaleString('th-TH')"></span>
+                                </template>
+                            </div>
+                            
+                            <div style="margin-top: auto; padding-top: var(--space-sm); padding-bottom: var(--space-md); border-bottom: 1px dashed var(--color-border); font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                                <span class="text-muted">ผู้สมัคร: <strong style="color: var(--color-text-main);" x-text="activity.registered_count"></strong> / <span x-text="activity.max_people"></span></span>
+                                <span style="font-weight: 700;" :style="activity.remaining_seats > 0 ? 'color: var(--color-success);' : 'color: var(--color-danger);'" x-text="'เหลือ ' + activity.remaining_seats + ' ที่'"></span>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-xs); margin-top: var(--space-sm);">
+                                <button class="btn btn--outline" style="font-size: 0.75rem; padding: 4px;" :style="activity.status === 'open' ? 'color: var(--color-warning);' : 'color: var(--color-success);'" @click="toggle(activity)">
+                                    <span x-text="activity.status === 'open' ? 'ปิดรับด่วน' : 'กลับมาเปิด'"></span>
+                                </button>
+                                <button class="btn btn--outline" style="font-size: 0.75rem; padding: 4px; color: var(--color-danger);" @click="remove(activity)">
+                                    ลบ
+                                </button>
+                                <a :href="`/admin/activity/${activity.id}`" class="btn btn--primary" style="font-size: 0.75rem; padding: 4px; text-decoration: none;">
+                                    จัดการ
+                                </a>
+                            </div>
                         </div>
-                        
-                        <div class="mt-2 pb-3 border-b border-slate-100 dark:border-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-between">
-                            <span>ผู้สมัคร: <span class="font-bold text-slate-800 dark:text-slate-200" x-text="activity.registered_count"></span> / <span x-text="activity.max_people"></span></span>
-                            <span class="text-xs font-bold" :class="activity.remaining_seats > 0 ? 'text-emerald-500' : 'text-rose-500'" x-text="'เหลือ ' + activity.remaining_seats + ' ที่'"></span>
-                        </div>
-                        
-                        <div class="grid grid-cols-3 gap-2 mt-auto pt-1 text-xs font-semibold">
-                            <button
-                                class="px-3 py-2 rounded-xl transition shadow-sm border flex items-center justify-center text-center"
-                                :class="activity.status === 'open' ? 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:border-amber-900/50' : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/50'"
-                                @click="toggle(activity)">
-                                <span x-text="activity.status === 'open' ? 'ปิดรับด่วน' : 'กลับมาเปิด'"></span>
-                            </button>
-                            <button
-                                class="px-3 py-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-900/20 transition shadow-sm flex items-center justify-center text-center"
-                                @click="remove(activity)">
-                                ลบ
-                            </button>
-                            <a class="px-3 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 dark:hover:bg-slate-600 transition shadow-md text-center flex items-center justify-center"
-                                :href="`/admin/activity/${activity.id}`">
-                                จัดการ
-                            </a>
-                        </div>
-                    </div>
-                </template>
+                    </template>
+                </div>
             </div>
         </div>
     </div>

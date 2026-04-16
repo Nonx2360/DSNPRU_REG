@@ -154,3 +154,6 @@ sql_app.db
 *.db
 
 *.pdf
+
+.gemini
+.claude

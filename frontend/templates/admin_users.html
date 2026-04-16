@@ -2,112 +2,72 @@
 
 {% block content %}
 <section>
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <header class="mb-lg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                </div>
-                จัดการผู้ดูแลระบบ
-            </h1>
-            <p class="text-xs text-slate-500 mt-2 font-medium">เพิ่ม ลบ หรือแก้ไขสิทธิ์การเข้าถึงระบบ</p>
+            <h1 style="margin: 0;">จัดการผู้ดูแลระบบ</h1>
+            <p class="text-muted" style="margin-top: var(--space-xs); font-size: 0.75rem;">เพิ่ม ลบ หรือแก้ไขสิทธิ์การเข้าถึงระบบ</p>
         </div>
-        <div class="flex flex-wrap gap-2 text-[11px] sm:text-xs">
-            <button onclick="openCreateModal()"
-                class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-md shadow-indigo-500/20 flex items-center gap-1.5 active:scale-95 text-xs">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div style="display: flex; gap: var(--space-sm);">
+            <button onclick="openCreateModal()" class="btn btn--primary" style="font-size: 0.75rem; display: flex; align-items: center; gap: var(--space-xs);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" style="color: white;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 เพิ่มผู้ใช้ใหม่
             </button>
-            <a href="/admin/dashboard"
-                class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-semibold shadow-sm flex items-center text-xs">
-                กลับแดชบอร์ด
-            </a>
+            <a href="/admin/dashboard" class="btn btn--outline" style="font-size: 0.75rem;">กลับแดชบอร์ด</a>
         </div>
-    </div>
+    </header>
 
-    <div
-        class="bg-white dark:bg-slate-900 shadow-sm rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left">
-                <thead class="bg-slate-50/50 dark:bg-slate-800/50 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                        <th class="py-4 px-6">ID</th>
-                        <th class="py-4 px-6">ชื่อผู้ใช้ (Username)</th>
-                        <th class="py-4 px-6 text-center">บทบาท (Role)</th>
-                        <th class="py-4 px-6 text-right w-24">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table-body"
-                    class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-600 dark:text-slate-300">
-                    <!-- Users will be populated here -->
-                </tbody>
-            </table>
-        </div>
+    <div class="card" style="padding: 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--color-border); background: var(--color-background);">
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">ID</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">ชื่อผู้ใช้ (Username)</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: center;" class="text-muted">บทบาท (Role)</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: right;" class="text-muted">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body" style="font-size: 0.875rem;">
+                <!-- Users will be populated here -->
+            </tbody>
+        </table>
     </div>
 </section>
 
 <!-- Create User Modal -->
-<div id="create-modal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog"
-    aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" aria-hidden="true"
-            onclick="closeCreateModal()"></div>
-
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-        <div
-            class="relative inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full border border-slate-200 dark:border-slate-800">
-            <div class="bg-white dark:bg-slate-900 p-6">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white" id="modal-title">เพิ่มผู้ควบคุมระบบ</h3>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label
-                            class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">ชื่อผู้ใช้ (Username)</label>
-                        <input type="text" id="new-username" autocomplete="off"
-                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm font-medium text-slate-700 dark:text-slate-200">
-                    </div>
-                    <div>
-                        <label
-                            class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">รหัสผ่าน (Password)</label>
-                        <input type="password" id="new-password"
-                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm font-medium text-slate-700 dark:text-slate-200">
-                    </div>
-                    <div>
-                        <label
-                            class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">ระดับสิทธิ์ (Role)</label>
-                        <select id="new-role"
-                            class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm font-medium text-slate-700 dark:text-slate-200">
-                            <option value="staff">พนักงาน (Staff)</option>
-                            <option value="admin">ผู้ดูแลระบบ (Admin)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="mt-8 flex gap-3">
-                    <button type="button" onclick="closeCreateModal()"
-                        class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-sm text-center">
-                        ยกเลิก
-                    </button>
-                    <button type="button" onclick="createUser()"
-                        class="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-md shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition text-center">
-                        สร้างบัญชี
-                    </button>
-                </div>
+<div id="create-modal" class="modal-overlay" style="display: none;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="modal-content">
+        <div style="display: flex; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-lg);">
+            <div class="badge badge--success border-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
             </div>
+            <div>
+                <h3 style="margin: 0;" id="modal-title">เพิ่มผู้ควบคุมระบบ</h3>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label text-muted">ชื่อผู้ใช้ (Username)</label>
+            <input type="text" id="new-username" autocomplete="off" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label text-muted">รหัสผ่าน (Password)</label>
+            <input type="password" id="new-password" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label text-muted">ระดับสิทธิ์ (Role)</label>
+            <select id="new-role" class="form-input">
+                <option value="staff">พนักงาน (Staff)</option>
+                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: var(--space-md); margin-top: var(--space-xl);">
+            <button type="button" onclick="closeCreateModal()" class="btn btn--outline" style="flex: 1;">ยกเลิก</button>
+            <button type="button" onclick="createUser()" class="btn btn--accent" style="flex: 1;">สร้างบัญชี</button>
         </div>
     </div>
 </div>
@@ -133,20 +93,18 @@
 
                 users.forEach(user => {
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors group";
+                    tr.style.borderBottom = '1px solid var(--color-border)';
                     tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">${user.id}</td>
-                    <td class="px-6 py-4">
-                        <div class="font-bold text-slate-800 dark:text-slate-100">${user.username}</div>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="${user.is_superuser ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-300' : 'bg-slate-100 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'} border px-3 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase shadow-sm">
+                    <td style="padding: var(--space-sm) var(--space-md); font-family: monospace;" class="text-muted">${user.id}</td>
+                    <td style="padding: var(--space-sm) var(--space-md); font-weight: 700;">${user.username}</td>
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
+                        <span class="badge ${user.is_superuser ? 'badge--success border-none' : 'badge--info border-none'}">
                             ${user.is_superuser ? 'Admin' : 'Staff'}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="deleteUser(${user.id})" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors group-hover:text-rose-500" title="ลบผู้ใช้">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <td style="padding: var(--space-sm) var(--space-md); text-align: right;">
+                        <button onclick="deleteUser(${user.id})" class="btn" style="background: transparent; border: none; padding: 4px; box-shadow: none;" title="ลบผู้ใช้">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" style="color: var(--color-danger);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
@@ -171,11 +129,11 @@
     }
 
     function openCreateModal() {
-        document.getElementById('create-modal').classList.remove('hidden');
+        document.getElementById('create-modal').style.display = 'flex';
     }
 
     function closeCreateModal() {
-        document.getElementById('create-modal').classList.add('hidden');
+        document.getElementById('create-modal').style.display = 'none';
     }
 
     async function createUser() {
@@ -206,7 +164,6 @@
                 Swal.fire('สำเร็จ', 'สร้างผู้ใช้งานสำเร็จแล้ว', 'success');
                 closeCreateModal();
                 fetchUsers();
-                // Clear inputs
                 document.getElementById('new-username').value = '';
                 document.getElementById('new-password').value = '';
             } else {

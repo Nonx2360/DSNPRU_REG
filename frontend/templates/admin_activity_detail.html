@@ -60,7 +60,7 @@
                     text: "คุณต้องการนำนักเรียนคนนี้ออกจากกิจกรรมใช่หรือไม่?",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#e11d48',
+                    confirmButtonColor: '#D95D39',
                     confirmButtonText: 'ยืนยัน',
                     cancelButtonText: 'ยกเลิก'
                 });
@@ -83,51 +83,47 @@
 {% endblock %}
 {% block content %}
 <section x-data="activityDetailPage()" x-init="load()">
-    <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-semibold">รายชื่อผู้สมัครกิจกรรม</h1>
-        <a href="/admin/activities" class="text-xs text-rose-600 hover:underline">กลับหน้าจัดการกิจกรรม</a>
-    </div>
+    <header class="mb-lg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
+        <h1 style="margin: 0;">รายชื่อผู้สมัครกิจกรรม</h1>
+        <a href="/admin/activities" style="color: var(--color-danger); font-size: 0.875rem; font-weight: 700; text-decoration: none;">กลับหน้าจัดการกิจกรรม</a>
+    </header>
 
-    <div class="flex justify-end gap-2 mb-3 text-xs">
-        <button class="px-3 py-1.5 rounded-full border border-slate-300 dark:border-slate-600" @click="exportExcel">
+    <div style="display: flex; justify-content: flex-end; gap: var(--space-sm); margin-bottom: var(--space-md);">
+        <button class="btn btn--outline" @click="exportExcel" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 999px;">
             ส่งออก Excel
         </button>
-        <button class="px-3 py-1.5 rounded-full bg-slate-900 text-white" @click="exportPdf">
+        <button class="btn btn--primary" @click="exportPdf" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 999px;">
             ส่งออก PDF
         </button>
     </div>
 
-    <div
-        class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-4 overflow-x-auto">
-        <table id="regTable" class="display text-xs w-full">
+    <div class="card" style="padding: var(--space-md); overflow-x: auto;">
+        <table id="regTable" class="display" style="width: 100%; font-size: 0.875rem;">
             <thead>
                 <tr>
-                    <th>ชื่อ–สกุล</th>
-                    <th>ห้อง</th>
-                    <th>เลขที่</th>
-                    <th>เวลา</th>
-                    <th>สถานะ</th>
-                    <th class="text-right">จัดการ</th>
+                    <th style="text-align: left; padding: var(--space-sm);">ชื่อ–สกุล</th>
+                    <th style="text-align: left; padding: var(--space-sm);">ห้อง</th>
+                    <th style="text-align: left; padding: var(--space-sm);">เลขที่</th>
+                    <th style="text-align: left; padding: var(--space-sm);">เวลา</th>
+                    <th style="text-align: left; padding: var(--space-sm);">สถานะ</th>
+                    <th style="text-align: right; padding: var(--space-sm);">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
                 <template x-for="r in registrations" :key="r.id">
-                    <tr>
-                        <td x-text="r.student.name"></td>
-                        <td x-text="r.student.classroom"></td>
-                        <td x-text="r.student.number"></td>
-                        <td x-text="new Date(r.timestamp).toLocaleString('th-TH')"></td>
-                        <td>
-                            <span x-show="r.status === 'registered'" class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded border border-emerald-200">ลงทะเบียนสำเร็จ</span>
-                            <span x-show="r.status === 'waitlisted'" class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 rounded border border-amber-200">สำรองคิว</span>
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: var(--space-sm);" x-text="r.student.name"></td>
+                        <td style="padding: var(--space-sm);" x-text="r.student.classroom"></td>
+                        <td style="padding: var(--space-sm);" x-text="r.student.number"></td>
+                        <td style="padding: var(--space-sm);" x-text="new Date(r.timestamp).toLocaleString('th-TH')"></td>
+                        <td style="padding: var(--space-sm);">
+                            <span x-show="r.status === 'registered'" class="badge badge--success" style="font-size: 0.65rem;">ลงทะเบียนสำเร็จ</span>
+                            <span x-show="r.status === 'waitlisted'" class="badge badge--warning" style="font-size: 0.65rem;">สำรองคิว</span>
                         </td>
-                        <td class="text-right">
-                            <button @click="deleteRegistration(r.id)"
-                                class="text-rose-600 hover:text-rose-800 transition p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <td style="text-align: right; padding: var(--space-sm);">
+                            <button @click="deleteRegistration(r.id)" class="btn" style="background: transparent; color: var(--color-danger); padding: 4px; border: none; box-shadow: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </button>
                         </td>

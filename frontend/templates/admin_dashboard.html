@@ -13,10 +13,6 @@
                     return;
                 }
 
-                // Decode token to get basic info (or better, have an endpoint for 'me')
-                // For now, we'll try to fetch logs to see if we are admin, OR assume true/false based on token payload if we had role there.
-                // Better approach: fetch a 'me' endpoint or similar. Since we don't have one, let's try to fetch '/admin/api/admins' which is restricted.
-                // If 200 => superuser. If 403 => staff.
                 try {
                     await axios.get('/admin/api/admins', { headers: { Authorization: 'Bearer ' + token } });
                     this.isAdmin = true;
@@ -40,11 +36,11 @@
                                 datasets: [{
                                     label: 'จำนวนผู้สมัคร',
                                     data: counts,
-                                    backgroundColor: 'rgba(225, 29, 72, 0.8)', // Rose-600 with opacity
-                                    borderColor: '#e11d48', // Rose-600
+                                    backgroundColor: 'rgba(217, 93, 57, 0.8)', // Terracotta
+                                    borderColor: '#D95D39',
                                     borderWidth: 1,
                                     borderRadius: 4,
-                                    minBarLength: 5 // Fixes the 0 height invisible bar issue
+                                    minBarLength: 5
                                 }]
                             },
                             options: {
@@ -58,7 +54,6 @@
             },
             init() {
                 this.load();
-                // Real-time: Refresh dashboard stats every 30 seconds
                 setInterval(() => this.load(), 30000);
             },
             async importFile(e) {
@@ -85,8 +80,7 @@
                 } catch (err) {
                     Swal.fire('เกิดข้อผิดพลาด', err.response?.data?.detail || 'ไม่สามารถนำเข้าข้อมูลได้', 'error');
                 }
-                e.target.value = ''; // Reset
-                e.target.value = ''; // Reset
+                e.target.value = '';
             },
             showPasswordModal: false,
             passwordForm: { old_password: '', new_password: '', confirm_password: '' },
@@ -128,210 +122,165 @@
 {% endblock %}
 {% block content %}
 <section x-data="dashboardPage()" x-init="load()">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-            <h1 class="text-2xl font-semibold">แดชบอร์ดผู้ดูแลกิจกรรม</h1>
-            <p class="text-xs text-slate-500 mt-1">ภาพรวมจำนวนผู้สมัครต่อกิจกรรม</p>
-        </div>
-    </div>
+    <header class="mb-lg">
+        <h1>แดชบอร์ดผู้ดูแลกิจกรรม</h1>
+        <p class="text-muted">ภาพรวมจำนวนผู้สมัครต่อกิจกรรม</p>
+    </header>
+
     <!-- Toolbar -->
-    <div
-        class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-6 p-2 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-            <input type="file" x-ref="fileInput" @change="importFile" class="hidden" accept=".xlsx,.xls">
-            <button @click="$refs.fileInput.click()"
-                class="flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs font-semibold text-slate-700 dark:text-slate-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+    <div class="card mb-lg" style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-md); padding: var(--space-sm) var(--space-md);">
+        
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
+            <input type="file" x-ref="fileInput" @change="importFile" class="d-none" accept=".xlsx,.xls">
+            <button @click="$refs.fileInput.click()" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--color-success)">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
                 นำเข้า
             </button>
-            <a href="/admin/analytics"
-                class="flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs font-semibold text-slate-700 dark:text-slate-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <a href="/admin/analytics" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: purple;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 สถิติ
             </a>
-            <a href="/admin/students"
-                class="flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs font-semibold text-slate-700 dark:text-slate-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 01-6-6v6z" />
+            <a href="/admin/students" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--color-primary);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 01-6-6v6z" />
                 </svg>
                 รายชื่อ
             </a>
-            <a href="/admin/activities"
-                class="flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition text-xs font-bold text-rose-700 dark:text-rose-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            <a href="/admin/activities" class="btn btn--accent" style="padding: 6px 12px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: white;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
                 กิจกรรม
             </a>
-            <a href="/admin/platform/status"
-                class="flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs font-semibold text-slate-700 dark:text-slate-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <a href="/admin/platform/status" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--color-warning);">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 สถานะระบบ
             </a>
-            <a href="/admin/export"
-                class="flex items-center justify-center sm:justify-start gap-1.5 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition text-xs font-semibold text-slate-700 dark:text-slate-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            <a href="/admin/export" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 ส่งออก
             </a>
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-2">
+        <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
             <template x-if="isAdmin">
-                <div class="grid grid-cols-2 sm:flex gap-2">
-                    <a href="/admin/users"
-                        class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-[11px] sm:text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Users
-                    </a>
-                    <a href="/admin/logs"
-                        class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-[11px] sm:text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Logs
-                    </a>
+                <div style="display: flex; gap: var(--space-sm);">
+                    <a href="/admin/users" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">Users</a>
+                    <a href="/admin/logs" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">Logs</a>
                 </div>
             </template>
-
-            <div class="grid grid-cols-2 sm:flex gap-2">
-                <a href="/admin/announcements"
-                    class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-900/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                    </svg>
-                    ประกาศ
-                </a>
-                <button @click="showPasswordModal = true"
-                    class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-[11px] sm:text-xs font-medium border border-slate-200 dark:border-slate-700">
-                    เปลี่ยนรหัส
-                </button>
-                <button @click="logout()"
-                    class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 transition text-[11px] sm:text-xs font-medium shadow-md shadow-rose-500/10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    ออกระบบ
-                </button>
-            </div>
+            
+            <a href="/admin/announcements" class="badge" style="display: flex; align-items: center; gap: var(--space-xs); font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
+                ประกาศ
+            </a>
+            
+            <button @click="showPasswordModal = true" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
+                เปลี่ยนรหัส
+            </button>
+            <button @click="logout()" class="btn btn--primary" style="padding: 6px 12px; font-size: 0.75rem; display: flex; align-items: center; gap: var(--space-xs); background: var(--color-danger); border-color: var(--color-danger); box-shadow: 4px 4px 0 #9f1239;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: white;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                ออกระบบ
+            </button>
         </div>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-6 mb-8" x-show="stats">
-        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div class="text-sm font-semibold text-slate-500 uppercase tracking-widest">นักเรียนทั้งหมด</div>
-                <div class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="grid-cards mb-xl" x-show="stats">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                <div class="text-muted" style="font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">นักเรียนทั้งหมด</div>
+                <div class="badge badge--info border-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 01-6-6v6z" />
                     </svg>
                 </div>
             </div>
-            <div class="text-3xl font-black text-slate-800 dark:text-white tracking-tight" x-text="stats?.total_students ?? 0"></div>
+            <div style="font-size: 2rem; font-weight: 900; line-height: 1;" x-text="stats?.total_students ?? 0"></div>
         </div>
         
-        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div class="text-sm font-semibold text-slate-500 uppercase tracking-widest">การลงทะเบียนรวม</div>
-                <div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                <div class="text-muted" style="font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">การลงทะเบียนรวม</div>
+                <div class="badge badge--success border-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
-            <div class="text-3xl font-black text-slate-800 dark:text-white tracking-tight" x-text="stats?.total_registrations ?? 0"></div>
+            <div style="font-size: 2rem; font-weight: 900; line-height: 1;" x-text="stats?.total_registrations ?? 0"></div>
         </div>
         
-        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div class="text-sm font-semibold text-slate-500 uppercase tracking-widest">จำนวนกิจกรรม</div>
-                <div class="p-2 bg-rose-50 dark:bg-rose-900/30 rounded-lg text-rose-600 dark:text-rose-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                <div class="text-muted" style="font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">จำนวนกิจกรรม</div>
+                <div class="badge badge--danger border-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                 </div>
             </div>
-            <div class="text-3xl font-black text-slate-800 dark:text-white tracking-tight" x-text="stats?.activities?.length ?? 0"></div>
+            <div style="font-size: 2rem; font-weight: 900; line-height: 1;" x-text="stats?.activities?.length ?? 0"></div>
         </div>
     </div>
 
-    <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider mb-6 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="card" style="padding: var(--space-xl);">
+        <h2 class="mb-lg" style="font-size: 1rem; display: flex; align-items: center; gap: var(--space-sm);">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon-md text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             กราฟแสดงจำนวนผู้สมัครต่อกิจกรรม
         </h2>
-        <div class="w-full" style="height: 350px;">
+        <div style="height: 350px;">
             <canvas id="activityChart"></canvas>
         </div>
     </div>
 
-    <!-- Change Password Modal (Moved to overlay structure at root-ish level using telepathy) -->
+    <!-- Change Password Modal -->
     <template x-teleport="body">
-        <div x-show="showPasswordModal" class="fixed inset-0 z-[100] overflow-y-auto" style="display: none;">
-            <div class="flex items-center justify-center min-h-screen px-4 pb-20 pt-4 text-center sm:p-0">
-                <div class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" x-transition.opacity @click="showPasswordModal = false"></div>
-
-                <div class="relative w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl text-left transform transition-all sm:my-8" x-transition.scale.origin.bottom>
-                    <div class="mb-6 flex items-center gap-3">
-                        <div class="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">เปลี่ยนรหัสผ่าน</h3>
-                            <p class="text-xs text-slate-500">สำหรับบัญชีผู้ใช้ปัจจุบัน</p>
-                        </div>
+        <div x-show="showPasswordModal" class="modal-overlay" style="display: none;" x-cloak>
+            <div class="modal-content" @click.away="showPasswordModal = false">
+                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-xl);">
+                    <div class="badge badge--danger border-none" style="padding: var(--space-sm);">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
                     </div>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label
-                                class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 opacity-80">รหัสผ่านเดิม</label>
-                            <input type="password" x-model="passwordForm.old_password"
-                                class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                        </div>
-                        <div>
-                            <label
-                                class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 opacity-80">รหัสผ่านใหม่</label>
-                            <input type="password" x-model="passwordForm.new_password"
-                                class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                        </div>
-                        <div>
-                            <label
-                                class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 opacity-80">ยืนยันรหัสผ่านใหม่</label>
-                            <input type="password" x-model="passwordForm.confirm_password"
-                                class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition shadow-sm">
-                        </div>
+                    <div>
+                        <h3 style="margin: 0;">เปลี่ยนรหัสผ่าน</h3>
+                        <p class="text-muted" style="font-size: 0.75rem;">สำหรับบัญชีผู้ใช้ปัจจุบัน</p>
                     </div>
+                </div>
 
-                    <div class="mt-8 flex gap-3">
-                        <button @click="showPasswordModal = false"
-                            class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                            ยกเลิก
-                        </button>
-                        <button @click="changePassword"
-                            class="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-bold shadow-md shadow-rose-500/20 hover:bg-rose-700 active:scale-95 transition">
-                            ยืนยัน
-                        </button>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">รหัสผ่านเดิม</label>
+                    <input type="password" x-model="passwordForm.old_password" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">รหัสผ่านใหม่</label>
+                    <input type="password" x-model="passwordForm.new_password" class="form-input">
+                </div>
+                
+                <div class="form-group mb-xl">
+                    <label class="form-label">ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" x-model="passwordForm.confirm_password" class="form-input">
+                </div>
+
+                <div style="display: flex; gap: var(--space-md);">
+                    <button @click="showPasswordModal = false" class="btn btn--outline" style="flex: 1;">ยกเลิก</button>
+                    <button @click="changePassword" class="btn btn--accent" style="flex: 1;">ยืนยัน</button>
                 </div>
             </div>
         </div>

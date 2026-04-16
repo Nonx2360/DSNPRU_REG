@@ -36,11 +36,10 @@
 
             renderCharts() {
                 this.$nextTick(() => {
-                    this.renderTrendChart('requestChart', 'Requests', this.metrics.request_trend, '#3b82f6', 'rgba(59, 130, 246, 0.1)');
+                    this.renderTrendChart('requestChart', 'Requests', this.metrics.request_trend, '#2E4C6D', 'rgba(46, 76, 109, 0.1)');
                     this.renderTrendChart('respTimeChart', 'Avg Response Time (ms)', this.metrics.response_time_trend, '#10b981', 'rgba(16, 185, 129, 0.1)');
-                    this.renderTrendChart('errorRateChart', 'Error Rate (%)', this.metrics.error_rate_trend, '#ef4444', 'rgba(239, 68, 68, 0.1)');
+                    this.renderTrendChart('errorRateChart', 'Error Rate (%)', this.metrics.error_rate_trend, '#D95D39', 'rgba(217, 93, 57, 0.1)');
                     
-                    // Use KB for the DB chart if the values are small (< 1MB)
                     const maxBytes = Math.max(...this.metrics.db_size_trend.map(d => d.value), 0);
                     const useMB = maxBytes > 1024 * 1024;
                     const dbData = this.metrics.db_size_trend.map(m => ({
@@ -55,12 +54,10 @@
                 const canvas = document.getElementById(canvasId);
                 if (!canvas || !data) return;
                 
-                // Small delay to ensure DOM and context are ready
                 setTimeout(() => {
                     const ctx = canvas.getContext('2d');
                     if (!ctx) return;
 
-                    // Ensure old chart is destroyed before creating new one
                     const existingChart = Chart.getChart(canvas);
                     if (existingChart) {
                         existingChart.destroy();
@@ -165,153 +162,141 @@
 
 {% block content %}
 <section x-data="platformStatusPage()" x-init="init()">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <header class="mb-lg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
         <div>
-            <h1 class="text-2xl font-semibold">Platform Status</h1>
-            <p class="text-xs text-slate-500 mt-1">การตรวจสอบสุขภาพของระบบและประสิทธิภาพ (API & Database)</p>
+            <h1 style="margin: 0;">Platform Status</h1>
+            <p class="text-muted" style="margin-top: var(--space-xs); font-size: 0.75rem;">การตรวจสอบสุขภาพของระบบและประสิทธิภาพ (API & Database)</p>
         </div>
-        <div class="flex items-center gap-2">
-             <a href="/admin/dashboard" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-medium hover:bg-slate-200 transition">Dashboard</a>
-             <button @click="load()" class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition" title="Refresh">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="loading ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div style="display: flex; gap: var(--space-sm); align-items: center;">
+             <a href="/admin/dashboard" class="btn btn--outline" style="font-size: 0.75rem;">Dashboard</a>
+             <button @click="load()" class="btn" style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 6px;" title="Refresh">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" :style="loading ? 'animation: spin 1s linear infinite;' : ''" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
              </button>
         </div>
-    </div>
+    </header>
 
-    <!-- Real-time Status Cards -->
     <template x-if="status">
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-center">
-                <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">API Health</div>
-                <div class="flex items-center justify-center gap-1.5 font-bold text-sm" :class="status.api_health === 'healthy' ? 'text-emerald-500' : 'text-rose-500'">
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="status.api_health === 'healthy' ? 'bg-emerald-400' : 'bg-rose-400'"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2" :class="status.api_health === 'healthy' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-                    </span>
+        <div class="grid-cards mb-xl" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+            <div class="card" style="text-align: center; padding: var(--space-md);">
+                <div class="text-muted mb-xs" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">API Health</div>
+                <div style="font-size: 0.875rem; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 6px;" :style="status.api_health === 'healthy' ? 'color: var(--color-success);' : 'color: var(--color-danger);'">
+                    <div style="width: 8px; height: 8px; border-radius: 50%;" :style="status.api_health === 'healthy' ? 'background: var(--color-success);' : 'background: var(--color-danger);'"></div>
                     <span x-text="status.api_health.toUpperCase()"></span>
                 </div>
             </div>
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-center">
-                <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">DB Health</div>
-                <div class="flex items-center justify-center gap-1.5 font-bold text-sm" :class="status.db_health === 'healthy' ? 'text-emerald-500' : 'text-rose-500'">
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="status.db_health === 'healthy' ? 'bg-emerald-400' : 'bg-rose-400'"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2" :class="status.db_health === 'healthy' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-                    </span>
+            <div class="card" style="text-align: center; padding: var(--space-md);">
+                <div class="text-muted mb-xs" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">DB Health</div>
+                <div style="font-size: 0.875rem; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 6px;" :style="status.db_health === 'healthy' ? 'color: var(--color-success);' : 'color: var(--color-danger);'">
+                    <div style="width: 8px; height: 8px; border-radius: 50%;" :style="status.db_health === 'healthy' ? 'background: var(--color-success);' : 'background: var(--color-danger);'"></div>
                     <span x-text="status.db_health.toUpperCase()"></span>
                 </div>
             </div>
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-center">
-                <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Uptime (24h)</div>
-                <div class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="status.uptime_percent + '%'">--</div>
+            <div class="card" style="text-align: center; padding: var(--space-md);">
+                <div class="text-muted mb-xs" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Uptime (24h)</div>
+                <div style="font-size: 1rem; font-weight: 700;" x-text="status.uptime_percent + '%'">--</div>
             </div>
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-center">
-                <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Req (24h)</div>
-                <div class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="status.total_requests_24h">0</div>
+            <div class="card" style="text-align: center; padding: var(--space-md);">
+                <div class="text-muted mb-xs" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Req (24h)</div>
+                <div style="font-size: 1rem; font-weight: 700;" x-text="status.total_requests_24h">0</div>
             </div>
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-center">
-                <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Avg Latency</div>
-                <div class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="status.avg_response_time_24h + ' ms'">0ms</div>
+            <div class="card" style="text-align: center; padding: var(--space-md);">
+                <div class="text-muted mb-xs" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Avg Latency</div>
+                <div style="font-size: 1rem; font-weight: 700;" x-text="status.avg_response_time_24h + ' ms'">0ms</div>
             </div>
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-center">
-                <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Errors</div>
-                <div class="font-bold text-sm" :class="status.error_rate_24h > 5 ? 'text-rose-500' : 'text-slate-700 dark:text-slate-200'" x-text="status.error_rate_24h + '%'">0%</div>
+            <div class="card" style="text-align: center; padding: var(--space-md);">
+                <div class="text-muted mb-xs" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Errors</div>
+                <div style="font-size: 1rem; font-weight: 700;" :style="status.error_rate_24h > 5 ? 'color: var(--color-danger);' : ''" x-text="status.error_rate_24h + '%'">0%</div>
             </div>
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm text-center">
-                <div class="text-[10px] font-bold uppercase text-slate-400 mb-1">DB Size</div>
-                <div class="font-bold text-sm text-slate-700 dark:text-slate-200" x-text="formatBytes(status.db_size_bytes)">0 MB</div>
+            <div class="card" style="text-align: center; padding: var(--space-md);">
+                <div class="text-muted mb-xs" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">DB Size</div>
+                <div style="font-size: 1rem; font-weight: 700;" x-text="formatBytes(status.db_size_bytes)">0 MB</div>
             </div>
         </div>
     </template>
 
-    <!-- Filters and Exports -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold text-slate-500 uppercase">Timeframe:</span>
-            <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-                <button @click="days = 1; load()" class="px-3 py-1 rounded-md text-[10px] font-bold transition" :class="days === 1 ? 'bg-white dark:bg-slate-700 shadow-sm text-rose-600' : 'text-slate-500'">24H</button>
-                <button @click="days = 7; load()" class="px-3 py-1 rounded-md text-[10px] font-bold transition" :class="days === 7 ? 'bg-white dark:bg-slate-700 shadow-sm text-rose-600' : 'text-slate-500'">7D</button>
-                <button @click="days = 30; load()" class="px-3 py-1 rounded-md text-[10px] font-bold transition" :class="days === 30 ? 'bg-white dark:bg-slate-700 shadow-sm text-rose-600' : 'text-slate-500'">30D</button>
-                <button @click="days = 90; load()" class="px-3 py-1 rounded-md text-[10px] font-bold transition" :class="days === 90 ? 'bg-white dark:bg-slate-700 shadow-sm text-rose-600' : 'text-slate-500'">90D</button>
+    <div class="card mb-lg" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-md);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <span class="text-muted" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Timeframe:</span>
+            <div style="display: flex; background: var(--color-background); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                <button @click="days = 1; load()" class="btn" style="padding: 2px 8px; font-size: 0.65rem; background: transparent; border: none; box-shadow: none;" :style="days === 1 ? 'background: var(--color-surface); color: var(--color-danger);' : 'color: var(--color-text-muted);'">24H</button>
+                <button @click="days = 7; load()" class="btn" style="padding: 2px 8px; font-size: 0.65rem; background: transparent; border: none; box-shadow: none;" :style="days === 7 ? 'background: var(--color-surface); color: var(--color-danger);' : 'color: var(--color-text-muted);'">7D</button>
+                <button @click="days = 30; load()" class="btn" style="padding: 2px 8px; font-size: 0.65rem; background: transparent; border: none; box-shadow: none;" :style="days === 30 ? 'background: var(--color-surface); color: var(--color-danger);' : 'color: var(--color-text-muted);'">30D</button>
+                <button @click="days = 90; load()" class="btn" style="padding: 2px 8px; font-size: 0.65rem; background: transparent; border: none; box-shadow: none;" :style="days === 90 ? 'background: var(--color-surface); color: var(--color-danger);' : 'color: var(--color-text-muted);'">90D</button>
             </div>
         </div>
-        <div class="flex items-center gap-2">
-            <button @click="exportCSV" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold hover:opacity-90 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export CSV History
-            </button>
-        </div>
+        <button @click="exportCSV" class="btn btn--primary" style="font-size: 0.75rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" style="color: white;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export CSV History
+        </button>
     </div>
 
     <!-- Charts Grid -->
-    <div x-show="metrics" class="grid lg:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-blue-500"></div> Request Volume
+    <div x-show="metrics" class="grid-cards mb-xl" style="grid-template-columns: 1fr 1fr;">
+        <div class="card">
+            <h3 class="text-muted mb-md" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                Request Volume
             </h3>
             <div class="chart-container"><canvas id="requestChart"></canvas></div>
         </div>
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-emerald-500"></div> Avg Latency (ms)
+        <div class="card">
+            <h3 class="text-muted mb-md" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                Avg Latency (ms)
             </h3>
             <div class="chart-container"><canvas id="respTimeChart"></canvas></div>
         </div>
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-rose-500"></div> Error Rate (%)
+        <div class="card">
+            <h3 class="text-muted mb-md" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                Error Rate (%)
             </h3>
             <div class="chart-container"><canvas id="errorRateChart"></canvas></div>
         </div>
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-amber-500"></div> Database Size (MB)
+        <div class="card">
+            <h3 class="text-muted mb-md" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                Database Size (MB)
             </h3>
             <div class="chart-container"><canvas id="dbSizeChart"></canvas></div>
         </div>
     </div>
 
     <!-- Endpoint Breakdown -->
-    <div x-show="metrics && metrics.endpoint_breakdown && metrics.endpoint_breakdown.length" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden mb-8">
-        <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Endpoint Performance Breakdown</h3>
+    <div x-show="metrics && metrics.endpoint_breakdown && metrics.endpoint_breakdown.length" class="card" style="padding: 0; overflow-x: auto;">
+        <div style="background: var(--color-background); padding: var(--space-sm) var(--space-md); border-bottom: 2px solid var(--color-border); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;" class="text-muted">
+            Endpoint Performance Breakdown
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead>
-                    <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-[10px] uppercase font-bold tracking-wider">
-                        <th class="px-6 py-4">Method & Path</th>
-                        <th class="px-6 py-4">Requests</th>
-                        <th class="px-6 py-4">Avg Latency</th>
-                        <th class="px-6 py-4">Error Rate</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                    <template x-for="e in (metrics ? metrics.endpoint_breakdown : [])">
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition">
-                            <td class="px-6 py-4 flex items-center">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black mr-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300" x-text="e.method"></span>
-                                <span class="font-medium text-slate-600 dark:text-slate-300 truncate max-w-[200px]" :title="e.path" x-text="e.path"></span>
-                            </td>
-                            <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-200" x-text="e.count"></td>
-                            <td class="px-6 py-4 text-slate-500 dark:text-slate-400" x-text="e.avg_response_time + ' ms'"></td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex-1 min-w-[60px] h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                        <div class="h-full bg-rose-500 transition-all" :style="`width: ${Math.min(e.error_rate * 5, 100)}%`"></div>
-                                    </div>
-                                    <span class="text-xs font-bold min-w-[30px]" :class="e.error_rate > 5 ? 'text-rose-500' : 'text-slate-500'" x-text="e.error_rate + '%'"></span>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--color-border);">
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">Method & Path</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">Requests</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">Avg Latency</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">Error Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="e in (metrics ? metrics.endpoint_breakdown : [])">
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: var(--space-sm) var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
+                            <span class="badge" x-text="e.method"></span>
+                            <span style="font-weight: 500;" x-text="e.path"></span>
+                        </td>
+                        <td style="padding: var(--space-sm) var(--space-md); font-weight: 700;" x-text="e.count"></td>
+                        <td style="padding: var(--space-sm) var(--space-md);" class="text-muted" x-text="e.avg_response_time + ' ms'"></td>
+                        <td style="padding: var(--space-sm) var(--space-md);">
+                            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                                <div style="flex: 1; height: 6px; background: var(--color-border); border-radius: 999px; overflow: hidden; max-width: 100px;">
+                                    <div style="height: 100%; transition: all 0.3s;" :style="`width: ${Math.min(e.error_rate * 5, 100)}%; background: var(--color-danger);`"></div>
                                 </div>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
-        </div>
+                                <span style="font-size: 0.75rem; font-weight: 700;" :style="e.error_rate > 5 ? 'color: var(--color-danger);' : 'color: var(--color-text-muted);'" x-text="e.error_rate + '%'"></span>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
     </div>
 </section>
 {% endblock %}

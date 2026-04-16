@@ -40,85 +40,57 @@
 {% endblock %}
 {% block content %}
 <section x-data="logsPage()" x-init="load()">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <header class="mb-lg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                </div>
-                ระบบ Logs
-            </h1>
-            <p class="text-xs text-slate-500 mt-2 font-medium">ประวัติการทำงานของผู้ดูแลระบบ</p>
+            <h1 style="margin: 0;">ระบบ Logs</h1>
+            <p class="text-muted" style="margin-top: var(--space-xs); font-size: 0.75rem;">ประวัติการทำงานของผู้ดูแลระบบ</p>
         </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-            <div class="relative w-full sm:w-64">
-                <input type="text" x-model="search" placeholder="ค้นหา Logs..."
-                    class="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition shadow-sm font-medium text-slate-700 dark:text-slate-200">
-                <svg xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
+            <div style="position: relative; width: 250px;">
+                <input type="text" x-model="search" placeholder="ค้นหา Logs..." class="form-input" style="padding-left: 32px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm text-muted" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
             </div>
-            <a href="/admin/dashboard"
-                class="shrink-0 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs transition font-semibold shadow-sm text-slate-700 dark:text-slate-300">
-                กลับแดชบอร์ด
-            </a>
+            <a href="/admin/dashboard" class="btn btn--outline" style="font-size: 0.75rem;">กลับแดชบอร์ด</a>
         </div>
-    </div>
+    </header>
 
-    <div
-        class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-50/50 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                        <th class="px-5 py-4 whitespace-nowrap">เวลา (Time)</th>
-                        <th class="px-5 py-4 whitespace-nowrap">ผู้เกี่ยวข้อง (Who)</th>
-                        <th class="px-5 py-4 whitespace-nowrap">การกระทำ (Action)</th>
-                        <th class="px-5 py-4 w-full">รายละเอียด (Details)</th>
-                        <th class="px-5 py-4 whitespace-nowrap">IP Address</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                    <template x-for="log in filteredLogs" :key="log.id">
-                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
-                            <td class="px-5 py-3 whitespace-nowrap font-mono text-slate-500"
-                                x-text="formatDate(log.timestamp)"></td>
-                            <td class="px-5 py-3 whitespace-nowrap font-medium text-slate-700 dark:text-slate-200">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shadow-sm"
-                                        x-text="log.admin_username.substring(0,2).toUpperCase()"></div>
-                                    <span x-text="log.admin_username"></span>
-                                </div>
-                            </td>
-                            <td class="px-5 py-3 whitespace-nowrap">
-                                <span
-                                    class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[10px] font-semibold tracking-wide text-slate-600 dark:text-slate-300"
-                                    x-text="log.action"></span>
-                            </td>
-                            <td class="px-5 py-3 text-slate-600 dark:text-slate-400 break-all leading-relaxed"
-                                x-text="log.details || '-'"></td>
-                            <td class="px-5 py-3 whitespace-nowrap font-mono text-slate-400"
-                                x-text="log.ip_address || 'Unknown'"></td>
-                        </tr>
-                    </template>
-                    <tr x-show="filteredLogs.length === 0">
-                        <td colspan="5" class="px-6 py-12 text-center text-slate-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto mb-3 text-slate-300"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            ไม่พบข้อมูล Logs
+    <div class="card" style="padding: 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--color-border); background: var(--color-background);">
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">เวลา (Time)</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">ผู้เกี่ยวข้อง (Who)</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">การกระทำ (Action)</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">รายละเอียด (Details)</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="log in filteredLogs" :key="log.id">
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: var(--space-sm) var(--space-md); font-family: monospace;" class="text-muted" x-text="formatDate(log.timestamp)"></td>
+                        <td style="padding: var(--space-sm) var(--space-md); font-weight: 700;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700;" x-text="log.admin_username.substring(0,2).toUpperCase()"></div>
+                                <span x-text="log.admin_username"></span>
+                            </div>
                         </td>
+                        <td style="padding: var(--space-sm) var(--space-md);">
+                            <span class="badge" x-text="log.action"></span>
+                        </td>
+                        <td style="padding: var(--space-sm) var(--space-md); max-width: 300px; white-space: normal; line-height: 1.4;" class="text-muted" x-text="log.details || '-'"></td>
+                        <td style="padding: var(--space-sm) var(--space-md); font-family: monospace;" class="text-muted" x-text="log.ip_address || 'Unknown'"></td>
                     </tr>
-                </tbody>
-            </table>
-        </div>
+                </template>
+                <tr x-show="filteredLogs.length === 0">
+                    <td colspan="5" style="padding: var(--space-xl); text-align: center;" class="text-muted">
+                        ไม่พบข้อมูล Logs
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </section>
 {% endblock %}

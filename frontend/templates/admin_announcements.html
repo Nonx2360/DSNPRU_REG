@@ -75,7 +75,7 @@
                     text: 'คุณต้องการลบประกาศนี้ใช่หรือไม่',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#e11d48',
+                    confirmButtonColor: '#D95D39',
                     confirmButtonText: 'ยืนยัน',
                     cancelButtonText: 'ยกเลิก'
                 });
@@ -98,127 +98,117 @@
 {% endblock %}
 {% block content %}
 <section x-data="announcementsPage()" x-init="load()" x-cloak>
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <header class="mb-lg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                <div class="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                    </svg>
-                </div>
-                จัดการประกาศ (Announcements)
-            </h1>
-            <p class="text-xs text-slate-500 mt-2 font-medium">จัดการข้อความแจ้งเตือนป้ายแบนเนอร์ด้านบน</p>
+            <h1 style="margin: 0;">จัดการประกาศ</h1>
+            <p class="text-muted" style="margin-top: var(--space-xs); font-size: 0.75rem;">จัดการข้อความแจ้งเตือนป้ายแบนเนอร์ด้านบน</p>
         </div>
-        <div class="flex items-center gap-2">
-            <button @click="openCreate()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-md shadow-indigo-500/20 text-xs flex items-center gap-1.5 active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div style="display: flex; gap: var(--space-sm); align-items: center;">
+            <button @click="openCreate()" class="btn btn--primary" style="font-size: 0.75rem; display: flex; align-items: center; gap: var(--space-xs);">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" style="color: white;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 เพิ่มประกาศใหม่
             </button>
-            <a href="/admin/dashboard" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-semibold shadow-sm text-xs">กลับ</a>
+            <a href="/admin/dashboard" class="btn btn--outline" style="font-size: 0.75rem;">กลับ</a>
         </div>
-    </div>
+    </header>
 
     <!-- Table -->
-    <div class="bg-white dark:bg-slate-900 shadow-sm rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-50/50 dark:bg-slate-800/50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                        <th class="py-4 px-6 w-1/2">ข้อความ</th>
-                        <th class="py-4 px-6">สถานะ (แสดงผล)</th>
-                        <th class="py-4 px-6 text-center">สีแบนเนอร์</th>
-                        <th class="py-4 px-6 text-right w-24">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-                    <template x-for="ann in announcements" :key="ann.id">
-                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
-                            <td class="px-6 py-4 relative">
-                                <div class="font-medium text-slate-800 dark:text-slate-200" x-text="ann.message"></div>
-                                <div class="text-[10px] text-slate-400 mt-1" x-text="new Date(ann.timestamp).toLocaleString('th-TH')"></div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition-colors"
-                                    :class="ann.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'">
-                                    <span x-text="ann.is_active ? 'เปิดใช้งาน' : 'ซ่อน'"></span>
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="w-4 h-4 rounded-full inline-block shadow-sm"
-                                    :class="{
-                                        'bg-rose-500': ann.color === 'rose',
-                                        'bg-indigo-500': ann.color === 'indigo',
-                                        'bg-emerald-500': ann.color === 'emerald',
-                                        'bg-amber-500': ann.color === 'amber'
-                                    }">
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <button @click="openEdit(ann)" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition" title="แก้ไข">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                        </svg>
-                                    </button>
-                                    <button @click="deleteAnn(ann.id)" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition" title="ลบ">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </template>
-                    <tr x-show="announcements.length === 0">
-                        <td colspan="4" class="px-6 py-12 text-center text-slate-400">
-                            ไม่พบประกาศ
+    <div class="card" style="padding: 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--color-border); background: var(--color-background);">
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left; width: 50%;" class="text-muted">ข้อความ</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: left;" class="text-muted">สถานะ</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: center;" class="text-muted">สี</th>
+                    <th style="padding: var(--space-sm) var(--space-md); text-align: right;" class="text-muted">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="ann in announcements" :key="ann.id">
+                    <tr style="border-bottom: 1px solid var(--color-border);">
+                        <td style="padding: var(--space-sm) var(--space-md);">
+                            <div style="font-weight: 700; margin-bottom: 4px;" x-text="ann.message"></div>
+                            <div class="text-muted" style="font-size: 0.65rem;" x-text="new Date(ann.timestamp).toLocaleString('th-TH')"></div>
+                        </td>
+                        <td style="padding: var(--space-sm) var(--space-md);">
+                            <span class="badge" :class="ann.is_active ? 'badge--success border-none' : ''">
+                                <span x-text="ann.is_active ? 'เปิดใช้งาน' : 'ซ่อน'"></span>
+                            </span>
+                        </td>
+                        <td style="padding: var(--space-sm) var(--space-md); text-align: center;">
+                            <div style="width: 16px; height: 16px; border-radius: 50%; display: inline-block;"
+                                :style="{
+                                    'background-color': ann.color === 'rose' ? '#e11d48' : 
+                                                        ann.color === 'indigo' ? '#4f46e5' : 
+                                                        ann.color === 'emerald' ? '#10b981' : '#f59e0b'
+                                }">
+                            </div>
+                        </td>
+                        <td style="padding: var(--space-sm) var(--space-md); text-align: right;">
+                            <button @click="openEdit(ann)" class="btn" style="background: transparent; border: none; padding: 4px; box-shadow: none;" title="แก้ไข">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" style="color: var(--color-primary);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                            <button @click="deleteAnn(ann.id)" class="btn" style="background: transparent; border: none; padding: 4px; box-shadow: none;" title="ลบ">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" style="color: var(--color-danger);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
                         </td>
                     </tr>
-                </tbody>
-            </table>
-        </div>
+                </template>
+                <tr x-show="announcements.length === 0">
+                    <td colspan="4" style="padding: var(--space-xl); text-align: center;" class="text-muted">
+                        ไม่พบประกาศ
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <!-- Modal Form -->
-    <div x-show="showCreateModal || showEditModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-slate-900/75 transition-opacity" aria-hidden="true" @click="closeModal()"></div>
-            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="relative inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full border border-slate-200 dark:border-slate-800">
-                <div class="bg-white dark:bg-slate-900 p-6">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6" x-text="showCreateModal ? 'เพิ่มประกาศใหม่' : 'แก้ไขประกาศ'"></h3>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">ข้อความประกาศ</label>
-                            <textarea x-model="form.message" rows="3" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm placeholder:text-slate-400"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 opacity-80">สีแบนเนอร์</label>
-                            <select x-model="form.color" class="w-full rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm">
-                                <template x-for="c in colors">
-                                    <option :value="c.value" x-text="c.label"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="flex items-center gap-2 mt-4 cursor-pointer">
-                                <input type="checkbox" x-model="form.is_active" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shadow-sm">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">เปิดใช้งานทันที (แสดงบนหน้าเว็บ)</span>
-                            </label>
-                        </div>
+    <template x-teleport="body">
+        <div x-show="showCreateModal || showEditModal" class="modal-overlay" style="display: none;" x-cloak>
+            <div class="modal-content" @click.away="closeModal()">
+                <div style="display: flex; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-lg);">
+                    <div class="badge badge--info border-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
                     </div>
+                    <div>
+                        <h3 style="margin: 0;" x-text="showCreateModal ? 'เพิ่มประกาศใหม่' : 'แก้ไขประกาศ'"></h3>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label text-muted">ข้อความประกาศ</label>
+                    <textarea x-model="form.message" class="form-input" style="min-height: 80px;"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label text-muted">สีแบนเนอร์</label>
+                    <select x-model="form.color" class="form-input">
+                        <template x-for="c in colors">
+                            <option :value="c.value" x-text="c.label"></option>
+                        </template>
+                    </select>
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: center; gap: var(--space-sm);">
+                    <input type="checkbox" x-model="form.is_active" style="cursor: pointer;">
+                    <span style="font-size: 0.875rem; font-weight: 700;">เปิดใช้งานทันที (แสดงบนหน้าเว็บ)</span>
+                </div>
 
-                    <div class="mt-8 flex gap-3">
-                        <button type="button" @click="closeModal()" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">ยกเลิก</button>
-                        <button type="button" @click="save()" class="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-md shadow-indigo-500/20 hover:bg-indigo-700 transition">บันทึก</button>
-                    </div>
+                <div style="display: flex; gap: var(--space-md); margin-top: var(--space-xl);">
+                    <button type="button" @click="closeModal()" class="btn btn--outline" style="flex: 1;">ยกเลิก</button>
+                    <button type="button" @click="save()" class="btn btn--accent" style="flex: 1;">บันทึก</button>
                 </div>
             </div>
         </div>
-    </div>
+    </template>
 </section>
 {% endblock %}

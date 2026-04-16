@@ -38,7 +38,7 @@
                 if (!endTimeStr) return null;
                 const end = new Date(endTimeStr);
                 const diff = end - this.now;
-                if (diff <= 0) return { text: 'หมดเวลาสมัคร', colorClass: 'text-slate-500 bg-slate-100 dark:bg-slate-800' };
+                if (diff <= 0) return { text: 'หมดเวลาสมัคร', colorClass: 'badge--danger' };
                 
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -49,9 +49,9 @@
                 if (hours > 0) text += hours + ' ชม. ';
                 if (days === 0 && hours === 0) text += mins + ' นาที';
                 
-                let colorClass = 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-800';
-                if (days < 2 && days >= 0) colorClass = 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-800';
-                if (days === 0 && hours < 12) colorClass = 'text-rose-600 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-900/30 dark:border-rose-800 font-bold animate-pulse';
+                let colorClass = 'badge--success';
+                if (days < 2 && days >= 0) colorClass = 'badge--warning';
+                if (days === 0 && hours < 12) colorClass = 'badge--danger text-danger';
                 
                 return { text, colorClass };
             }
@@ -61,120 +61,88 @@
 {% endblock %}
 {% block content %}
 <section x-data="activitiesPage()" x-init="load()">
-    <div class="mb-8">
-        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-            <div>
-                <a href="/" class="text-xs font-bold text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition mb-2 inline-flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-3">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-                    </svg>
-                    กลับไปหน้าแรก
-                </a>
-                <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">ดูกิจกรรมทั้งหมด</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">รายชื่อกิจกรรมที่เปิดรับสมัครในขณะนี้และสถานะจำนวนที่นั่ง</p>
-            </div>
-        </div>
+    <header class="mb-lg">
+        <a href="/" class="btn btn--outline mb-sm" style="font-size: 0.75rem; padding: 4px 8px; border: none; background: transparent;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-sm">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+            </svg>
+            กลับไปหน้าแรก
+        </a>
+        <h1>ดูกิจกรรมทั้งหมด</h1>
+        <p class="text-muted">รายชื่อกิจกรรมที่เปิดรับสมัครในขณะนี้และสถานะจำนวนที่นั่ง</p>
+    </header>
 
-        <!-- Search Bar Section -->
-        <div class="bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center">
-            <div class="relative w-full flex items-center">
-                <div class="absolute left-4 text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                    </svg>
-                </div>
-                <input type="text" x-model="searchQuery" placeholder="ค้นหากิจกรรมด้วยชื่อ รายละเอียด หรือกลุ่ม..."
-                    class="w-full bg-transparent border-none text-sm pl-12 pr-4 py-3 outline-none focus:ring-0 text-slate-800 dark:text-slate-200 placeholder:text-slate-400">
-            </div>
-            <button class="shrink-0 px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold shadow-sm shadow-rose-500/20 active:scale-95 transition-all mr-1">
-                ค้นหา
-            </button>
-        </div>
+    <!-- Search Bar Section -->
+    <div class="card mb-lg" style="display: flex; gap: var(--space-sm); align-items: center; padding: var(--space-sm) var(--space-md);">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-md" style="color: var(--color-text-muted);">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+        <input type="text" x-model="searchQuery" placeholder="ค้นหากิจกรรมด้วยชื่อ รายละเอียด หรือกลุ่ม..."
+            class="form-input" style="flex: 1; border: none; box-shadow: none; background: transparent;">
+        <button class="btn btn--accent">ค้นหา</button>
     </div>
 
-    <div class="space-y-10" id="sortable-activities">
+    <div>
         <template x-if="Object.keys(groupedActivities()).length === 0">
-            <div
-                class="text-center py-20 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                <div class="text-slate-400 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <p class="text-slate-500 font-medium">ไม่พบกิจกรรมที่คุณกำลังค้นหา</p>
-                <button @click="searchQuery = ''"
-                    class="text-xs text-rose-600 hover:underline mt-2">ล้างการค้นหา</button>
+            <div class="card text-center" style="padding: var(--space-2xl) var(--space-md); border-style: dashed;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-xl mb-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--color-text-muted); margin: 0 auto;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p style="font-weight: 600;">ไม่พบกิจกรรมที่คุณกำลังค้นหา</p>
+                <button @click="searchQuery = ''" class="btn btn--outline mt-sm" style="border: none;">ล้างการค้นหา</button>
             </div>
         </template>
 
         <template x-for="(groupActs, groupName) in groupedActivities()" :key="groupName">
-            <div class="space-y-4">
-                <div class="flex items-center gap-3">
-                    <h3 class="inline-flex items-center px-3 py-1.5 bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 text-xs font-bold rounded-full uppercase tracking-wider shadow-sm border border-rose-200 dark:border-rose-800 text-balance">
-                        <span x-text="groupName" class="truncate line-clamp-1"></span>
-                    </h3>
-                    <div class="h-px flex-1 bg-slate-200 dark:bg-slate-700/50"></div>
+            <div class="mb-xl">
+                <div class="group-divider">
+                    <span class="group-divider__text" x-text="groupName"></span>
+                    <div class="group-divider__line"></div>
                 </div>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <div class="grid-cards" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
                     <template x-for="activity in groupActs" :key="activity.id">
-                        <div class="flex flex-col rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition group relative overflow-hidden h-full"
-                            :style="`border-top: 4px solid ${activity.color}`">
-                            <div class="flex items-start justify-between gap-3 mb-2 w-full">
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-bold text-[15px] leading-snug group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors" x-text="activity.title"></div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed" x-text="activity.description"></div>
-                                    <div class="mt-3 flex flex-wrap gap-2">
+                        <div class="activity-card cursor-default">
+                            <div class="activity-card__header">
+                                <div style="flex: 1;">
+                                    <h3 class="activity-card__title" x-text="activity.title"></h3>
+                                    <div class="activity-card__desc line-clamp-2" x-text="activity.description"></div>
+                                    <div style="margin-top: var(--space-sm); display: flex; gap: var(--space-xs); flex-wrap: wrap;">
                                         <template x-if="activity.allowed_classrooms">
-                                            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-medium text-slate-600 dark:text-slate-400"
-                                                x-text="'ห้อง: ' + activity.allowed_classrooms"></span>
+                                            <span class="badge" x-text="'ห้อง: ' + activity.allowed_classrooms"></span>
                                         </template>
                                         <template x-if="activity.start_time">
-                                            <span class="text-[10px] bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded font-medium text-emerald-600 dark:text-emerald-400"
-                                                x-text="new Date(activity.start_time).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'})"></span>
+                                            <span class="badge badge--info" x-text="new Date(activity.start_time).toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'})"></span>
                                         </template>
                                     </div>
                                 </div>
-                                <div class="flex flex-col items-end gap-1.5 shrink-0">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-colors"
-                                        :class="activity.status === 'open' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'">
-                                        <span x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
-                                    </span>
+                                <div class="activity-card__badges">
+                                    <span class="badge" :class="activity.status === 'open' ? 'badge--success' : 'badge--warning'"
+                                          x-text="activity.status === 'open' ? 'เปิดรับสมัคร' : 'ปิดรับสมัคร'"></span>
+                                    
                                     <template x-if="activity.end_time && activity.status !== 'close'">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 transition-colors"
-                                              :class="getTimeLeft(activity.end_time).colorClass">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span x-text="getTimeLeft(activity.end_time).text"></span>
-                                        </span>
+                                        <span class="badge" :class="getTimeLeft(activity.end_time).colorClass"
+                                              x-text="getTimeLeft(activity.end_time).text"></span>
                                     </template>
+                                    
                                     <template x-if="activity.type === 'team'">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800">
-                                            TEAM <span x-text="'(Max ' + activity.max_team_size + ')'"></span>
-                                        </span>
+                                        <span class="badge badge--info">TEAM (Max <span x-text="activity.max_team_size"></span>)</span>
                                     </template>
                                 </div>
                             </div>
-
-                            <!-- Progress Bar Area -->
-                            <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800/80 w-full">
-                                <div class="flex items-center justify-between text-[11px] mb-1.5 font-medium">
-                                    <span class="text-slate-500 dark:text-slate-400">สถานะที่นั่ง:</span>
-                                    <span :class="activity.remaining_seats <= 5 && activity.remaining_seats > 0 ? 'text-amber-600 dark:text-amber-500' : (activity.remaining_seats === 0 ? 'text-rose-600 dark:text-rose-500' : 'text-slate-700 dark:text-slate-300')">
-                                        <span x-show="activity.remaining_seats > 0">ว่าง <span class="font-bold" x-text="activity.remaining_seats"></span><span class="text-slate-400 dark:text-slate-500 font-normal"> / <span x-text="activity.max_people"></span></span></span>
-                                        <span x-show="activity.remaining_seats === 0" class="font-bold">เต็ม (ลงคิวสำรองได้)</span>
+                            
+                            <div class="activity-card__footer">
+                                <div class="progress-header">
+                                    <span>สถานะที่นั่ง:</span>
+                                    <span>
+                                        <span x-show="activity.remaining_seats > 0" x-cloak>ว่าง <span x-text="activity.remaining_seats"></span> / <span x-text="activity.max_people"></span></span>
+                                        <span x-show="activity.remaining_seats === 0" class="text-danger" x-cloak>เต็ม (สำรองคิวได้)</span>
                                     </span>
                                 </div>
-                                <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                    <div class="h-full rounded-full transition-all duration-500"
-                                        :style="`width: ${(1 - (activity.remaining_seats / activity.max_people)) * 100}%`"
-                                        :class="{
-                                            'bg-emerald-500': (activity.remaining_seats / activity.max_people) > 0.2,
-                                            'bg-amber-500': (activity.remaining_seats / activity.max_people) <= 0.2 && activity.remaining_seats > 0,
-                                            'bg-rose-500': activity.remaining_seats === 0
-                                        }">
+                                <div class="progress-track" role="progressbar" :aria-valuenow="activity.max_people - activity.remaining_seats" :aria-valuemax="activity.max_people">
+                                    <div class="progress-fill" 
+                                        :style="`width: ${(1 - (activity.remaining_seats / activity.max_people)) * 100}%`">
                                     </div>
                                 </div>
                             </div>
