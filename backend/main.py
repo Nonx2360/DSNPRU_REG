@@ -55,41 +55,41 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     async def index(request: Request):
-        return templates.TemplateResponse("index.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="index.html")
 
     @app.get("/activities")
     async def activities_page(request: Request):
-        return templates.TemplateResponse("activities.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="activities.html")
 
     @app.get("/about")
     async def about_page(request: Request):
-        return templates.TemplateResponse("about.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="about.html")
 
     @app.get("/admin/login")
     async def admin_login_page(request: Request):
-        return templates.TemplateResponse("admin_login.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="admin_login.html")
 
     @app.get("/admin/dashboard")
     async def admin_dashboard_page(request: Request):
-        return templates.TemplateResponse("admin_dashboard.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="admin_dashboard.html")
 
     @app.get("/admin/activities")
     async def admin_activities_page(request: Request):
-        return templates.TemplateResponse("admin_activities.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="admin_activities.html")
 
     @app.get("/admin/activity/{activity_id}")
     async def admin_activity_detail_page(request: Request, activity_id: int):
         return templates.TemplateResponse(
-            "admin_activity_detail.html", {"request": request, "activity_id": activity_id}
+            request=request, name="admin_activity_detail.html", context={"activity_id": activity_id}
         )
 
     @app.get("/admin/export")
     async def admin_export_page(request: Request):
-        return templates.TemplateResponse("admin_export.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="admin_export.html")
 
     @app.get("/admin/students")
     async def admin_students_page(request: Request):
-        return templates.TemplateResponse("admin_students.html", {"request": request})
+        return templates.TemplateResponse(request=request, name="admin_students.html")
 
     return app
 
@@ -168,20 +168,20 @@ async def log_requests(request: Request, call_next):
 
 @app.get("/admin/logs")
 async def admin_logs_page(request: Request):
-    return templates.TemplateResponse("admin_logs.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin_logs.html")
 
 @app.get("/admin/users")
 async def admin_users_page(request: Request):
-    return templates.TemplateResponse("admin_users.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin_users.html")
 
 @app.get("/admin/analytics")
 async def admin_analytics_page(request: Request):
-    return templates.TemplateResponse("admin_analytics.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin_analytics.html")
 
 @app.get("/admin/announcements")
 async def admin_announcements_page(request: Request):
-    return templates.TemplateResponse("admin_announcements.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin_announcements.html")
 
 @app.get("/admin/platform/status")
 async def admin_platform_status_page(request: Request):
-    return templates.TemplateResponse("admin_status.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin_status.html")
