@@ -212,7 +212,7 @@
                         if (updated) this.selectedActivity = updated;
                     }
                 }, 10000);
-                
+
                 setInterval(() => {
                     this.now = new Date();
                 }, 60000);
@@ -222,20 +222,20 @@
                 const end = new Date(endTimeStr);
                 const diff = end - this.now;
                 if (diff <= 0) return { text: 'หมดเวลาสมัคร', colorClass: 'badge--danger' };
-                
+
                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
                 const mins = Math.floor((diff / 1000 / 60) % 60);
-                
+
                 let text = 'เหลือเวลา ';
                 if (days > 0) text += days + ' วัน ';
                 if (hours > 0) text += hours + ' ชม. ';
                 if (days === 0 && hours === 0) text += mins + ' นาที';
-                
+
                 let colorClass = 'badge--success';
                 if (days < 2 && days >= 0) colorClass = 'badge--warning';
                 if (days === 0 && hours < 12) colorClass = 'badge--danger text-danger';
-                
+
                 return { text, colorClass };
             }
         }));
@@ -247,7 +247,7 @@
 <section x-data="registrationPage()">
     <header class="mb-lg">
         <h1>ลงทะเบียนเข้าร่วมกิจกรรม</h1>
-        <p class="text-muted">กรุณากรอกข้อมูลให้ครบถ้วน และเลือกกิจกรรมที่ต้องการเข้าร่วม (ไม่เกิน 3 กิจกรรมต่อคน)</p>
+        <p class="text-muted">กรุณากรอกข้อมูลให้ครบถ้วน และเลือกกิจกรรมที่ต้องการเข้าร่วม</p>
     </header>
 
     <!-- Tabs -->
@@ -275,16 +275,19 @@
                     <div class="student-profile__body">
                         <div class="form-group" style="position: relative;">
                             <label class="form-label" for="search-student">ค้นหานักเรียน</label>
-                            <input type="text" id="search-student" x-model="searchQuery" @input.debounce.300ms="searchStudents"
-                                class="form-input" placeholder="พิมพ์ชื่อ หรือ รหัสนักเรียน...">
-                                
+                            <input type="text" id="search-student" x-model="searchQuery"
+                                @input.debounce.300ms="searchStudents" class="form-input"
+                                placeholder="พิมพ์ชื่อ หรือ รหัสนักเรียน...">
+
                             <!-- Search Results Dropdown -->
-                            <div x-show="searchResults.length > 0" x-cloak @click.away="searchResults = []" class="results-dropdown">
+                            <div x-show="searchResults.length > 0" x-cloak @click.away="searchResults = []"
+                                class="results-dropdown">
                                 <template x-for="student in searchResults" :key="student.id">
                                     <button @click="selectStudent(student)" class="results-dropdown__item">
                                         <div style="font-weight: 600; font-size: 0.875rem;" x-text="student.name"></div>
-                                        <div style="font-size: 0.75rem; color: var(--color-text-muted);" 
-                                             x-text="'รหัส: ' + student.number + (student.sequence ? ' · เลขที่: ' + student.sequence : '')"></div>
+                                        <div style="font-size: 0.75rem; color: var(--color-text-muted);"
+                                            x-text="'รหัส: ' + student.number + (student.sequence ? ' · เลขที่: ' + student.sequence : '')">
+                                        </div>
                                     </button>
                                 </template>
                             </div>
@@ -293,14 +296,15 @@
                         <!-- ID Card Display -->
                         <div class="id-card" :class="form.number ? 'id-card--verified' : ''">
                             <div style="flex: 1;">
-                                <div style="font-size: 0.625rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;" 
+                                <div style="font-size: 0.625rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;"
                                     x-text="form.number ? 'ยืนยันตัวตนแล้ว' : 'กรุณาเลือกนักเรียน'"></div>
-                                <div style="font-family: var(--font-heading); font-size: 1rem; font-weight: 700; margin-top: 4px;" 
-                                     x-text="form.name || 'ยังไม่มีข้อมูลนักเรียน'"></div>
+                                <div style="font-family: var(--font-heading); font-size: 1rem; font-weight: 700; margin-top: 4px;"
+                                    x-text="form.name || 'ยังไม่มีข้อมูลนักเรียน'"></div>
                                 <div style="font-size: 0.75rem; margin-top: 4px;" x-show="form.number" x-cloak>
                                     <span style="font-weight: 600;">รหัส: <span x-text="form.number"></span></span>
                                     <template x-if="form.sequence">
-                                        <span> / เลขที่: <span x-text="form.sequence" style="font-weight: 600;"></span></span>
+                                        <span> / เลขที่: <span x-text="form.sequence"
+                                                style="font-weight: 600;"></span></span>
                                     </template>
                                 </div>
                             </div>
@@ -324,9 +328,11 @@
 
             <!-- Right Side: Activities List -->
             <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
                     <h2 style="font-size: 1rem; margin-bottom: 0;">เลือกกิจกรรม</h2>
-                    <button type="button" class="btn btn--outline" style="padding: 4px 8px; font-size: 0.75rem;" @click="loadActivities">
+                    <button type="button" class="btn btn--outline" style="padding: 4px 8px; font-size: 0.75rem;"
+                        @click="loadActivities">
                         โหลดกิจกรรมล่าสุด
                     </button>
                 </div>
@@ -338,44 +344,52 @@
                                 <span class="group-divider__text" x-text="groupName"></span>
                                 <div class="group-divider__line"></div>
                             </div>
-                            
+
                             <div class="grid-cards">
                                 <template x-for="activity in groupActs" :key="activity.id">
-                                    <button type="button" @click="selectActivity(activity)"
-                                        class="activity-card"
+                                    <button type="button" @click="selectActivity(activity)" class="activity-card"
                                         :class="form.activity_id === activity.id ? 'activity-card--selected' : ''"
                                         :aria-pressed="form.activity_id === activity.id">
-                                        
+
                                         <div class="activity-card__header">
                                             <div style="flex: 1;">
                                                 <h3 class="activity-card__title" x-text="activity.title"></h3>
-                                                <div class="activity-card__desc line-clamp-2" x-text="activity.description"></div>
+                                                <div class="activity-card__desc line-clamp-2"
+                                                    x-text="activity.description"></div>
                                             </div>
                                             <div class="activity-card__badges">
-                                                <span class="badge" :class="activity.status === 'open' ? 'badge--success' : 'badge--warning'"
-                                                      x-text="activity.status === 'open' ? 'เปิดรับ' : 'ปิดรับ'"></span>
-                                                
+                                                <span class="badge"
+                                                    :class="activity.status === 'open' ? 'badge--success' : 'badge--warning'"
+                                                    x-text="activity.status === 'open' ? 'เปิดรับ' : 'ปิดรับ'"></span>
+
                                                 <template x-if="activity.end_time && activity.status !== 'close'">
-                                                    <span class="badge" :class="getTimeLeft(activity.end_time).colorClass"
-                                                          x-text="getTimeLeft(activity.end_time).text"></span>
+                                                    <span class="badge"
+                                                        :class="getTimeLeft(activity.end_time).colorClass"
+                                                        x-text="getTimeLeft(activity.end_time).text"></span>
                                                 </template>
-                                                
+
                                                 <template x-if="activity.type === 'team'">
-                                                    <span class="badge badge--info">TEAM (Max <span x-text="activity.max_team_size"></span>)</span>
+                                                    <span class="badge badge--info">TEAM (Max <span
+                                                            x-text="activity.max_team_size"></span>)</span>
                                                 </template>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="activity-card__footer">
                                             <div class="progress-header">
                                                 <span>สถานะที่นั่ง:</span>
                                                 <span>
-                                                    <span x-show="activity.remaining_seats > 0" x-cloak>ว่าง <span x-text="activity.remaining_seats"></span> / <span x-text="activity.max_people"></span></span>
-                                                    <span x-show="activity.remaining_seats === 0" class="text-danger" x-cloak>เต็ม (สำรองคิวได้)</span>
+                                                    <span x-show="activity.remaining_seats > 0" x-cloak>ว่าง <span
+                                                            x-text="activity.remaining_seats"></span> / <span
+                                                            x-text="activity.max_people"></span></span>
+                                                    <span x-show="activity.remaining_seats === 0" class="text-danger"
+                                                        x-cloak>เต็ม (สำรองคิวได้)</span>
                                                 </span>
                                             </div>
-                                            <div class="progress-track" role="progressbar" :aria-valuenow="activity.max_people - activity.remaining_seats" :aria-valuemax="activity.max_people">
-                                                <div class="progress-fill" 
+                                            <div class="progress-track" role="progressbar"
+                                                :aria-valuenow="activity.max_people - activity.remaining_seats"
+                                                :aria-valuemax="activity.max_people">
+                                                <div class="progress-fill"
                                                     :style="`width: ${(1 - (activity.remaining_seats / activity.max_people)) * 100}%`">
                                                 </div>
                                             </div>
@@ -392,17 +406,20 @@
                     <h3 style="font-size: 1rem; margin-bottom: var(--space-md);">ข้อมูลทีม / ผู้สมัครร่วม</h3>
                     <div class="form-group">
                         <label class="form-label">ชื่อทีม (ถ้ามี)</label>
-                        <input type="text" x-model="teamName" placeholder="เช่น ทีมหมูป่า, กลุ่มเพื่อนรัก" class="form-input">
+                        <input type="text" x-model="teamName" placeholder="เช่น ทีมหมูป่า, กลุ่มเพื่อนรัก"
+                            class="form-input">
                     </div>
 
                     <div style="margin-bottom: var(--space-md);">
                         <label class="form-label">สมาชิกในทีม (ไม่รวมตัวคุณ)</label>
                         <template x-for="(partner, index) in partners" :key="index">
-                            <div style="display: flex; gap: var(--space-sm); align-items: flex-start; margin-bottom: var(--space-sm);">
+                            <div
+                                style="display: flex; gap: var(--space-sm); align-items: flex-start; margin-bottom: var(--space-sm);">
                                 <div style="flex: 1; position: relative;">
-                                    <input type="text" x-model="partner.query" @input.debounce.300ms="searchPartner(index)"
+                                    <input type="text" x-model="partner.query"
+                                        @input.debounce.300ms="searchPartner(index)"
                                         placeholder="ค้นหาเพื่อนด้วยชื่อ หรือ รหัสนักเรียน..." class="form-input">
-                                    
+
                                     <div x-show="partner.results.length > 0" class="results-dropdown" x-cloak>
                                         <template x-for="p in partner.results" :key="p.id">
                                             <button @click="selectPartner(index, p)" class="results-dropdown__item">
@@ -412,11 +429,13 @@
                                         </template>
                                     </div>
                                 </div>
-                                <button type="button" @click="removePartner(index)" class="btn btn--outline text-danger" style="padding: 6px 12px;">✕</button>
+                                <button type="button" @click="removePartner(index)" class="btn btn--outline text-danger"
+                                    style="padding: 6px 12px;">✕</button>
                             </div>
                         </template>
 
-                        <div style="display: flex; gap: var(--space-md); align-items: center; margin-top: var(--space-sm);">
+                        <div
+                            style="display: flex; gap: var(--space-md); align-items: center; margin-top: var(--space-sm);">
                             <button type="button" @click="addPartner"
                                 x-show="selectedActivity && partners.length < (selectedActivity.max_team_size - 1)"
                                 class="btn btn--outline" style="font-size: 0.75rem; padding: 4px 8px;">
@@ -428,7 +447,8 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; font-size: 0.875rem;">
+                        <label
+                            style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; font-size: 0.875rem;">
                             <input type="checkbox" x-model="applyAlone">
                             สมัครคนเดียว (ไม่ระบุทีม)
                         </label>
@@ -442,7 +462,8 @@
     <!-- My Registrations Tab -->
     <div x-show="currentTab === 'my_registrations'" x-cloak role="tabpanel" tabindex="0">
         <div class="card" style="max-width: 600px; margin: 0 auto;">
-            <h2 style="font-size: 1.125rem; text-align: center; margin-bottom: var(--space-lg);">ตรวจสอบข้อมูลและยกเลิก</h2>
+            <h2 style="font-size: 1.125rem; text-align: center; margin-bottom: var(--space-lg);">ตรวจสอบข้อมูลและยกเลิก
+            </h2>
 
             <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-lg);">
                 <input type="text" x-model="myRegNumber" placeholder="กรอกเลขประจำตัวนักเรียนของคุณ..."
@@ -459,14 +480,16 @@
             <div x-show="!loadingRegs" x-cloak>
                 <template x-if="myRegistrations === null">
                     <div class="text-center mt-xl mb-xl">
-                        <p style="color: var(--color-text-muted); font-weight: 500;">กรุณากรอกรหัสนักเรียนเพื่อตรวจสอบ</p>
+                        <p style="color: var(--color-text-muted); font-weight: 500;">กรุณากรอกรหัสนักเรียนเพื่อตรวจสอบ
+                        </p>
                     </div>
                 </template>
 
                 <template x-if="myRegistrations !== null && myRegistrations.length === 0">
                     <div class="text-center mt-xl mb-xl">
                         <p style="font-weight: 600;">ไม่พบข้อมูลการลงทะเบียน</p>
-                        <p style="font-size: 0.75rem; color: var(--color-text-muted);">กรุณาตรวจสอบเลขประจำตัวอีกครั้ง</p>
+                        <p style="font-size: 0.75rem; color: var(--color-text-muted);">กรุณาตรวจสอบเลขประจำตัวอีกครั้ง
+                        </p>
                     </div>
                 </template>
 
@@ -474,7 +497,8 @@
                     <div class="reg-list-item">
                         <div>
                             <div style="display: flex; align-items: center; gap: var(--space-sm);">
-                                <h3 style="font-size: 1rem; margin-bottom: 0;" x-text="reg.activity?.title || 'Unknown'"></h3>
+                                <h3 style="font-size: 1rem; margin-bottom: 0;"
+                                    x-text="reg.activity?.title || 'Unknown'"></h3>
                                 <template x-if="reg.status === 'waitlisted'">
                                     <span class="badge badge--warning">สำรองคิว</span>
                                 </template>
@@ -482,7 +506,8 @@
                                     <span class="badge badge--success">สำเร็จ</span>
                                 </template>
                             </div>
-                            <div style="font-size: 0.75rem; margin-top: var(--space-xs); display: flex; gap: var(--space-md); color: var(--color-text-muted);">
+                            <div
+                                style="font-size: 0.75rem; margin-top: var(--space-xs); display: flex; gap: var(--space-md); color: var(--color-text-muted);">
                                 <span x-text="new Date(reg.timestamp).toLocaleString('th-TH')"></span>
                                 <span x-show="reg.team_name" x-cloak style="font-weight: 600;">
                                     ทีม: <span x-text="reg.team_name"></span>
