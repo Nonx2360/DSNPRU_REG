@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block title %}สถิติและการวิเคราะห์ - DSNPRU_REG{% endblock %}
 {% block head_extra %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('analyticsPage', () => ({
@@ -26,106 +25,147 @@
                     this.renderCharts();
                 } catch (e) {
                     console.error('Analytics load failed', e);
+                    if (e.response && e.response.status === 401) {
+                        window.location.href = '/admin/login';
+                    }
                 }
             },
             renderCharts() {
                 this.$nextTick(() => {
-                    this.renderTrendChart();
-                    this.renderGroupChart();
-                    this.renderClassChart();
+                    try {
+                        this.renderTrendChart();
+                        this.renderGroupChart();
+                        this.renderClassChart();
+                    } catch (err) {
+                        console.error('Error rendering charts:', err);
+                    }
                 });
             },
             renderTrendChart() {
-                const ctx = document.getElementById('trendChart');
-                if (!ctx) return;
+                const canvas = document.getElementById('trendChart');
+                if (!canvas) return;
 
-                if (this.charts.trend) this.charts.trend.destroy();
-
-                this.charts.trend = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: this.data.trend.map(d => d.date),
-                        datasets: [{
-                            label: 'จำนวนการลงทะเบียนรายวัน',
-                            data: this.data.trend.map(d => d.count),
-                            borderColor: '#D95D39',
-                            backgroundColor: 'rgba(217, 93, 57, 0.1)',
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
-                        }
+                // Small delay to ensure DOM and dimensions are stable
+                setTimeout(() => {
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        console.error('Could not get 2D context for trendChart');
+                        return;
                     }
-                });
+
+                    const existingChart = Chart.getChart(canvas);
+                    if (existingChart) {
+                        existingChart.destroy();
+                    }
+
+                    this.charts.trend = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: this.data.trend.map(d => d.date),
+                            datasets: [{
+                                label: 'จำนวนการลงทะเบียนรายวัน',
+                                data: this.data.trend.map(d => d.count),
+                                borderColor: '#D95D39',
+                                backgroundColor: 'rgba(217, 93, 57, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
+                            }
+                        }
+                    });
+                }, 50);
             },
             renderGroupChart() {
-                const ctx = document.getElementById('groupChart');
-                if (!ctx) return;
+                const canvas = document.getElementById('groupChart');
+                if (!canvas) return;
 
-                if (this.charts.groups) this.charts.groups.destroy();
+                setTimeout(() => {
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
 
-                this.charts.groups = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: this.data.groups.map(g => g.name),
-                        datasets: [{
-                            data: this.data.groups.map(g => g.count),
-                            backgroundColor: [
-                                '#D95D39', '#2E4C6D', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6'
-                            ]
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
-                        }
+                    const existingChart = Chart.getChart(canvas);
+                    if (existingChart) {
+                        existingChart.destroy();
                     }
-                });
+
+                    this.charts.groups = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: this.data.groups.map(g => g.name),
+                            datasets: [{
+                                data: this.data.groups.map(g => g.count),
+                                backgroundColor: [
+                                    '#D95D39', '#2E4C6D', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                            }
+                        }
+                    });
+                }, 50);
             },
             renderClassChart() {
-                const ctx = document.getElementById('classChart');
-                if (!ctx) return;
+                const canvas = document.getElementById('classChart');
+                if (!canvas) return;
 
-                if (this.charts.classrooms) this.charts.classrooms.destroy();
+                setTimeout(() => {
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return;
 
-                this.charts.classrooms = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: this.data.classrooms.map(c => c.classroom),
-                        datasets: [{
-                            label: 'จำนวนนักเรียน',
-                            data: this.data.classrooms.map(c => c.count),
-                            backgroundColor: 'rgba(46, 76, 109, 0.8)',
-                            borderColor: '#2E4C6D',
-                            borderWidth: 1,
-                            borderRadius: 4,
-                            minBarLength: 5
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        }
+                    const existingChart = Chart.getChart(canvas);
+                    if (existingChart) {
+                        existingChart.destroy();
                     }
-                });
+
+                    this.charts.classrooms = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: this.data.classrooms.map(c => c.classroom),
+                            datasets: [{
+                                label: 'จำนวนนักเรียน',
+                                data: this.data.classrooms.map(c => c.count),
+                                backgroundColor: 'rgba(46, 76, 109, 0.8)',
+                                borderColor: '#2E4C6D',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                                minBarLength: 5
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                }, 50);
             },
             init() {
                 this.load();
                 // Real-time update every 30 seconds
-                setInterval(() => this.load(), 30000);
+                this.refreshInterval = setInterval(() => this.load(), 30000);
+            },
+            destroy() {
+                if (this.refreshInterval) clearInterval(this.refreshInterval);
+                Object.values(this.charts).forEach(c => {
+                    if (c) c.destroy();
+                });
             }
         }));
     });

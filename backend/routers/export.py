@@ -32,21 +32,36 @@ def export_excel(
     admin=Depends(get_current_admin),
 ):
     regs = _get_registrations(db, activity_id)
+    is_team = False
+    if regs and hasattr(regs[0].activity, 'type') and regs[0].activity.type == "team":
+        is_team = True
+        regs = sorted(regs, key=lambda x: (x.team_name or "", x.student.classroom or "", x.student.sequence or 0))
+    else:
+        regs = sorted(regs, key=lambda x: (x.student.classroom or "", x.student.sequence or 0))
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Registrations"
-    ws.append(["กิจกรรม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"])
-
-    for r in regs:
-        ws.append(
-            [
+    
+    if is_team:
+        ws.append(["กิจกรรม", "ทีม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"])
+        for r in regs:
+            ws.append([
+                r.activity.title,
+                r.team_name or "-",
+                r.student.name,
+                r.student.classroom,
+                r.student.number,
+            ])
+    else:
+        ws.append(["กิจกรรม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"])
+        for r in regs:
+            ws.append([
                 r.activity.title,
                 r.student.name,
                 r.student.classroom,
                 r.student.number,
-            ]
-        )
+            ])
 
     stream = BytesIO()
     wb.save(stream)
@@ -97,7 +112,6 @@ def export_pdf(
     doc = SimpleDocTemplate(stream, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     elements = []
     
-    # Custom Thai Paragraph Style
     styles = getSampleStyleSheet()
     thai_style = ParagraphStyle(
         'ThaiStyle',
@@ -115,23 +129,63 @@ def export_pdf(
     elements.append(Paragraph(title_text, thai_style))
     elements.append(Spacer(1, 20))
 
-    # Table Data
-    data = [["ลำดับ", "กิจกรรม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"]]
-    for i, r in enumerate(regs, 1):
-        data.append([
-            str(i),
-            r.activity.title,
-            r.student.name,
-            r.student.classroom or "-",
-            r.student.number
-        ])
+    is_team = False
+    if regs and hasattr(regs[0].activity, 'type') and regs[0].activity.type == "team":
+        is_team = True
+        regs = sorted(regs, key=lambda x: (x.team_name or "", x.student.classroom or "", x.student.sequence or 0))
+    else:
+        regs = sorted(regs, key=lambda x: (x.student.classroom or "", x.student.sequence or 0))
 
-    # Table Styling
-    t = Table(data, colWidths=[40, 160, 180, 80, 50])
+    def get_team_paragraph(name):
+        if not name: return "-"
+        import hashlib
+        h = int(hashlib.md5(name.encode()).hexdigest(), 16)
+        r = (h & 0xFF) % 150 # darker colors for white text
+        g = ((h >> 8) & 0xFF) % 150
+        b = ((h >> 16) & 0xFF) % 150
+        bg_color = colors.Color(r/255.0, g/255.0, b/255.0)
+        
+        style = ParagraphStyle(
+            f'Team_{h}',
+            parent=styles['Normal'],
+            fontName=font_name,
+            fontSize=11,
+            alignment=1,
+            textColor=colors.white,
+            backColor=bg_color,
+            borderPadding=4
+        )
+        return Paragraph(f"{name}", style)
+
+    if is_team:
+        data = [["ลำดับ", "กิจกรรม", "ชื่อทีม", "ชื่อ-สกุล", "ห้อง", "รหัส"]]
+        for i, r in enumerate(regs, 1):
+            data.append([
+                str(i),
+                r.activity.title,
+                get_team_paragraph(r.team_name),
+                r.student.name,
+                r.student.classroom or "-",
+                r.student.number
+            ])
+        colWidths = [40, 100, 100, 140, 70, 60]
+    else:
+        data = [["ลำดับ", "กิจกรรม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"]]
+        for i, r in enumerate(regs, 1):
+            data.append([
+                str(i),
+                r.activity.title,
+                r.student.name,
+                r.student.classroom or "-",
+                r.student.number
+            ])
+        colWidths = [40, 160, 180, 80, 50]
+
+    t = Table(data, colWidths=colWidths)
     t.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), font_name),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),      # Header font size
-        ('FONTSIZE', (0, 1), (-1, -1), 11),     # Body font size
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('FONTSIZE', (0, 1), (-1, -1), 11),
         ('BACKGROUND', (0, 0), (-1, 0), colors.rose if hasattr(colors, 'rose') else colors.lightgrey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -142,10 +196,7 @@ def export_pdf(
         ('TOPPADDING', (0, 0), (-1, -1), 6),
     ]))
     
-    # Add table to elements
     elements.append(t)
-    
-    # Build PDF
     doc.build(elements)
     
     stream.seek(0)
@@ -161,11 +212,11 @@ def export_students_excel(
     db: Session = Depends(get_db),
     admin=Depends(get_current_admin),
 ):
-    students = db.query(models.Student).all()
+    students = db.query(models.Student).order_by(models.Student.classroom, models.Student.sequence).all()
     wb = Workbook()
     ws = wb.active
     ws.title = "Students"
-    ws.append(["รหัส", "คำนำหน้า", "ชื่อ", "นามสกุล", "ห้อง"])
+    ws.append(["รหัส", "คำนำหน้า", "ชื่อ", "นามสกุล", "ห้อง", "เลขที่"])
 
     prefixes = ["เด็กชาย", "เด็กหญิง", "นาย", "นางสาว", "ด.ช.", "ด.ญ."]
     
@@ -186,7 +237,7 @@ def export_students_excel(
         first_name = name_parts[0] if name_parts else ""
         last_name = name_parts[1] if len(name_parts) > 1 else ""
         
-        ws.append([s.number, found_prefix, first_name, last_name, s.classroom or ""])
+        ws.append([s.number, found_prefix, first_name, last_name, s.classroom or "", s.sequence or ""])
 
     stream = BytesIO()
     wb.save(stream)
@@ -209,7 +260,7 @@ def export_students_pdf(
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-    students = db.query(models.Student).order_by(models.Student.number).all()
+    students = db.query(models.Student).order_by(models.Student.classroom, models.Student.sequence).all()
     stream = BytesIO()
 
     # Register SukhumvitSet font for Thai text support
@@ -251,17 +302,18 @@ def export_students_pdf(
     elements.append(Spacer(1, 20))
 
     # Table Data
-    data = [["ลำดับ", "รหัสนักเรียน", "ชื่อ-นามสกุล", "ห้อง"]]
+    data = [["ลำดับ", "รหัสนักเรียน", "ชื่อ-นามสกุล", "ห้อง", "เลขที่"]]
     for i, s in enumerate(students, 1):
         data.append([
             str(i),
             s.number,
             s.name,
-            s.classroom or "-"
+            s.classroom or "-",
+            str(s.sequence) if s.sequence else "-"
         ])
 
     # Table Styling
-    t = Table(data, colWidths=[40, 100, 250, 100])
+    t = Table(data, colWidths=[40, 90, 240, 90, 50])
     t.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), font_name),
         ('FONTSIZE', (0, 0), (-1, 0), 12),
