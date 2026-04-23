@@ -27,6 +27,30 @@
                     allowed_classrooms: g.allowed_classrooms ? g.allowed_classrooms.split(',').map(c => c.trim()) : []
                 }));
                 this.classrooms = classRes.data;
+
+                const connectWs = () => {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activities`);
+                    
+                    ws.onmessage = async (event) => {
+                        if (event.data === 'update_activities') {
+                            const refreshActRes = await axios.get('/admin/api/activities', { headers: { Authorization: 'Bearer ' + token } });
+                            this.activities = refreshActRes.data.map(a => ({
+                                ...a,
+                                allowed_classrooms: a.allowed_classrooms ? a.allowed_classrooms.split(',').map(c => c.trim()) : []
+                            }));
+                        }
+                    };
+                    
+                    ws.onclose = () => {
+                        setTimeout(connectWs, 3000);
+                    };
+                };
+                
+                if (!this.wsConnected) {
+                    connectWs();
+                    this.wsConnected = true;
+                }
             },
             async createActivity() {
                 const token = sessionStorage.getItem('adminToken');

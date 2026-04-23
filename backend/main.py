@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 
 from .database import Base, engine, SessionLocal
+from .websocket_manager import manager
 from .routers import public, admin, export
 from .auth import get_password_hash
 from . import models
@@ -90,6 +91,15 @@ def create_app() -> FastAPI:
     @app.get("/admin/students")
     async def admin_students_page(request: Request):
         return templates.TemplateResponse(request=request, name="admin_students.html")
+
+    @app.websocket("/ws/activities")
+    async def websocket_activities(websocket: WebSocket):
+        await manager.connect(websocket)
+        try:
+            while True:
+                data = await websocket.receive_text()
+        except WebSocketDisconnect:
+            manager.disconnect(websocket)
 
     return app
 

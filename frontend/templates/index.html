@@ -83,6 +83,10 @@
             async loadActivities() {
                 const res = await axios.get('/api/activities');
                 this.activities = res.data;
+                if (this.selectedActivity) {
+                    const updated = this.activities.find(a => a.id === this.selectedActivity.id);
+                    if (updated) this.selectedActivity = updated;
+                }
             },
             groupedActivities() {
                 const groups = {};
@@ -204,14 +208,26 @@
 
             init() {
                 this.loadActivities();
-                setInterval(async () => {
-                    const res = await axios.get('/api/activities');
-                    this.activities = res.data;
-                    if (this.selectedActivity) {
-                        const updated = this.activities.find(a => a.id === this.selectedActivity.id);
-                        if (updated) this.selectedActivity = updated;
-                    }
-                }, 10000);
+                
+                const connectWs = () => {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activities`);
+                    
+                    ws.onmessage = async (event) => {
+                        if (event.data === 'update_activities') {
+                            await this.loadActivities();
+                            if (this.currentTab === 'my_registrations' && this.myRegNumber) {
+                                this.loadMyRegistrations();
+                            }
+                        }
+                    };
+                    
+                    ws.onclose = () => {
+                        setTimeout(connectWs, 3000);
+                    };
+                };
+                
+                connectWs();
 
                 setInterval(() => {
                     this.now = new Date();
@@ -379,9 +395,10 @@
                                             <div class="progress-header">
                                                 <span>สถานะที่นั่ง:</span>
                                                 <span>
-                                                    <span x-show="activity.remaining_seats > 0" x-cloak>ว่าง <span
-                                                            x-text="activity.remaining_seats"></span> / <span
-                                                            x-text="activity.max_people"></span></span>
+                                                    <span x-show="activity.remaining_seats > 0" x-cloak>ผู้สมัคร <span
+                                                            x-text="activity.registered_count"></span> / <span
+                                                            x-text="activity.max_people"></span> (ว่าง <span
+                                                            x-text="activity.remaining_seats"></span>)</span>
                                                     <span x-show="activity.remaining_seats === 0" class="text-danger"
                                                         x-cloak>เต็ม (สำรองคิวได้)</span>
                                                 </span>

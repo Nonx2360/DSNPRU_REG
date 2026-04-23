@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 import openpyxl
@@ -11,6 +11,8 @@ from .. import models, schemas
 from ..auth import authenticate_admin, create_access_token, get_current_admin, get_current_superuser, get_password_hash, verify_password
 from ..database import get_db
 from ..utils import log_action
+from ..websocket_manager import manager
+import asyncio
 from datetime import datetime, timedelta
 from sqlalchemy import func, case
 import csv
@@ -192,6 +194,7 @@ def delete_activity_group(
 def create_activity(
     activity_in: schemas.ActivityCreate,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -213,6 +216,7 @@ def create_activity(
     db.commit()
     db.refresh(activity)
     log_action(db, admin.username, "CREATE_ACTIVITY", f"Created activity: {activity.title}", request)
+    background_tasks.add_task(manager.broadcast, "update_activities")
 
     return schemas.Activity(
         id=activity.id,
@@ -265,6 +269,7 @@ def update_activity(
     activity_id: int,
     activity_in: schemas.ActivityUpdate,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -278,6 +283,7 @@ def update_activity(
     db.commit()
     db.refresh(activity)
     log_action(db, admin.username, "UPDATE_ACTIVITY", f"Updated activity: {activity.title}", request)
+    background_tasks.add_task(manager.broadcast, "update_activities")
 
     registered = len(activity.registrations)
     remaining = max(activity.max_people - registered, 0)
@@ -304,6 +310,7 @@ def update_activity(
 def toggle_activity_status(
     activity_id: int,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -315,6 +322,7 @@ def toggle_activity_status(
     db.commit()
     db.refresh(activity)
     log_action(db, admin.username, "TOGGLE_ACTIVITY", f"Toggled status of '{activity.title}' to {activity.status}", request)
+    background_tasks.add_task(manager.broadcast, "update_activities")
 
     registered = len(activity.registrations)
     remaining = max(activity.max_people - registered, 0)
@@ -341,6 +349,7 @@ def toggle_activity_status(
 def delete_activity(
     activity_id: int,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -352,6 +361,7 @@ def delete_activity(
     db.delete(activity)
     db.commit()
     log_action(db, admin.username, "DELETE_ACTIVITY", f"Deleted activity: {title}", request)
+    background_tasks.add_task(manager.broadcast, "update_activities")
     return
 
 
@@ -373,6 +383,7 @@ def get_registrations_for_activity(
 def delete_registration(
     reg_id: int,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -407,6 +418,7 @@ def delete_registration(
                 pass
 
     log_action(db, admin.username, "DELETE_REGISTRATION", details, request)
+    background_tasks.add_task(manager.broadcast, "update_activities")
     return
 
 

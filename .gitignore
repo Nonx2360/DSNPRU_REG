@@ -157,3 +157,6 @@ sql_app.db
 
 .gemini
 .claude
+
+favicon.ico
+frontend/favicon.ico

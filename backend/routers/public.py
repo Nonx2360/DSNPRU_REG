@@ -1,12 +1,14 @@
 from typing import List
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
 from ..utils import log_action
+from ..websocket_manager import manager
+import asyncio
 
 router = APIRouter()
 
@@ -77,7 +79,7 @@ def list_activities(db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=schemas.MessageResponse)
-def register_student(payload: schemas.RegistrationCreate, request: Request, db: Session = Depends(get_db)):
+def register_student(payload: schemas.RegistrationCreate, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # 1. Find main student
     student = (
         db.query(models.Student)
@@ -243,6 +245,8 @@ def register_student(payload: schemas.RegistrationCreate, request: Request, db: 
     except Exception as e:
         print(f"Public log failed: {e}")
 
+    background_tasks.add_task(manager.broadcast, "update_activities")
+
     remaining = activity.max_people - (registered_count + len(members)) if not is_waitlisted else 0
 
     if is_waitlisted:
@@ -269,7 +273,7 @@ def get_my_registrations(number: str, db: Session = Depends(get_db)):
 
 
 @router.post("/cancel_registration", response_model=schemas.MessageResponse)
-def cancel_registration(payload: schemas.CancelRequest, request: Request, db: Session = Depends(get_db)):
+def cancel_registration(payload: schemas.CancelRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # 1. Verify Student
     student = db.query(models.Student).filter(models.Student.number == payload.number).first()
     if not student:
@@ -329,6 +333,8 @@ def cancel_registration(payload: schemas.CancelRequest, request: Request, db: Se
     except:
         pass
         
+    background_tasks.add_task(manager.broadcast, "update_activities")
+
     # Get remaining seats
     count = db.query(models.Registration).filter(
         models.Registration.activity_id == activity.id,

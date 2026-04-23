@@ -34,6 +34,47 @@
                         });
                     }, 50);
                 });
+                
+                const connectWs = () => {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activities`);
+                    
+                    ws.onmessage = async (event) => {
+                        if (event.data === 'update_activities') {
+                            const refreshRes = await axios.get(`/admin/registrations/${this.activityId}`, {
+                                headers: { Authorization: 'Bearer ' + token }
+                            });
+                            this.registrations = refreshRes.data;
+                            
+                            // Re-init DataTable
+                            this.$nextTick(() => {
+                                if ($.fn.DataTable.isDataTable('#regTable')) {
+                                    $('#regTable').DataTable().destroy();
+                                }
+                                setTimeout(() => {
+                                    $('#regTable').DataTable({
+                                        language: {
+                                            search: "ค้นหา:",
+                                            lengthMenu: "แสดง _MENU_ รายการ",
+                                            info: "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+                                            paginate: { first: "หน้าแรก", last: "หน้าสุดท้าย", next: "ถัดไป", previous: "ก่อนหน้า" },
+                                            zeroRecords: "ไม่พบข้อมูล"
+                                        }
+                                    });
+                                }, 50);
+                            });
+                        }
+                    };
+                    
+                    ws.onclose = () => {
+                        setTimeout(connectWs, 3000);
+                    };
+                };
+                
+                if (!this.wsConnected) {
+                    connectWs();
+                    this.wsConnected = true;
+                }
             },
             async exportExcel() {
                 const token = sessionStorage.getItem('adminToken');

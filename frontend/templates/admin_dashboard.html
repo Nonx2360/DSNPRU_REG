@@ -27,9 +27,12 @@
                 this.$nextTick(() => {
                     const ctx = document.getElementById('activityChart');
                     if (ctx && window.Chart) {
+                        if (this.chartInstance) {
+                            this.chartInstance.destroy();
+                        }
                         const labels = this.stats.activities.map(a => a.title);
                         const counts = this.stats.activities.map(a => a.registered_count);
-                        new Chart(ctx, {
+                        this.chartInstance = new Chart(ctx, {
                             type: 'bar',
                             data: {
                                 labels,
@@ -54,7 +57,23 @@
             },
             init() {
                 this.load();
-                setInterval(() => this.load(), 30000);
+                
+                const connectWs = () => {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activities`);
+                    
+                    ws.onmessage = async (event) => {
+                        if (event.data === 'update_activities') {
+                            this.load();
+                        }
+                    };
+                    
+                    ws.onclose = () => {
+                        setTimeout(connectWs, 3000);
+                    };
+                };
+                
+                connectWs();
             },
             async importFile(e) {
                 const file = e.target.files[0];
