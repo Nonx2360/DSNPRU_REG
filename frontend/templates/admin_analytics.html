@@ -55,7 +55,10 @@
 
                     const existingChart = Chart.getChart(canvas);
                     if (existingChart) {
-                        existingChart.destroy();
+                        existingChart.data.labels = this.data.trend.map(d => d.date);
+                        existingChart.data.datasets[0].data = this.data.trend.map(d => d.count);
+                        existingChart.update('none'); // Update without animation for "responsiveness" or use default for smooth
+                        return;
                     }
 
                     this.charts.trend = new Chart(ctx, {
@@ -94,7 +97,10 @@
 
                     const existingChart = Chart.getChart(canvas);
                     if (existingChart) {
-                        existingChart.destroy();
+                        existingChart.data.labels = this.data.groups.map(g => g.name);
+                        existingChart.data.datasets[0].data = this.data.groups.map(g => g.count);
+                        existingChart.update();
+                        return;
                     }
 
                     this.charts.groups = new Chart(ctx, {
@@ -128,7 +134,10 @@
 
                     const existingChart = Chart.getChart(canvas);
                     if (existingChart) {
-                        existingChart.destroy();
+                        existingChart.data.labels = this.data.classrooms.map(c => c.classroom);
+                        existingChart.data.datasets[0].data = this.data.classrooms.map(c => c.count);
+                        existingChart.update();
+                        return;
                     }
 
                     this.charts.classrooms = new Chart(ctx, {
@@ -158,11 +167,25 @@
             },
             init() {
                 this.load();
-                // Real-time update every 30 seconds
-                this.refreshInterval = setInterval(() => this.load(), 30000);
+                
+                const connectWs = () => {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activities`);
+                    
+                    ws.onmessage = async (event) => {
+                        if (event.data === 'update_activities') {
+                            this.load();
+                        }
+                    };
+                    
+                    ws.onclose = () => {
+                        setTimeout(connectWs, 3000);
+                    };
+                };
+                
+                connectWs();
             },
             destroy() {
-                if (this.refreshInterval) clearInterval(this.refreshInterval);
                 Object.values(this.charts).forEach(c => {
                     if (c) c.destroy();
                 });
@@ -176,7 +199,7 @@
     <header class="mb-lg" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
         <div>
             <h1 style="margin: 0;">สถิติและการวิเคราะห์</h1>
-            <p class="text-muted" style="margin-top: var(--space-xs); font-size: 0.75rem;">ข้อมูลเชิงลึกการลงทะเบียน (อัปเดตเรียลไทม์ทุก 30 วินาที)</p>
+            <p class="text-muted" style="margin-top: var(--space-xs); font-size: 0.75rem;">ข้อมูลเชิงลึกการลงทะเบียน (อัปเดตเรียลไทม์)</p>
         </div>
         
         <div style="display: flex; gap: var(--space-sm); align-items: center;">
@@ -185,7 +208,7 @@
         </div>
     </header>
 
-    <div class="grid-cards mb-xl" style="grid-template-columns: 1fr 1fr;">
+    <div class="grid-cards mb-xl">
         <!-- Trend Chart -->
         <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl);">
             <h2 class="text-muted mb-md" style="font-size: 0.875rem; letter-spacing: 1px; display: flex; align-items: center; gap: var(--space-sm); text-transform: uppercase;">

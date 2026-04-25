@@ -27,11 +27,16 @@
                 this.$nextTick(() => {
                     const ctx = document.getElementById('activityChart');
                     if (ctx && window.Chart) {
-                        if (this.chartInstance) {
-                            this.chartInstance.destroy();
-                        }
                         const labels = this.stats.activities.map(a => a.title);
                         const counts = this.stats.activities.map(a => a.registered_count);
+
+                        if (this.chartInstance) {
+                            this.chartInstance.data.labels = labels;
+                            this.chartInstance.data.datasets[0].data = counts;
+                            this.chartInstance.update();
+                            return;
+                        }
+                        
                         this.chartInstance = new Chart(ctx, {
                             type: 'bar',
                             data: {

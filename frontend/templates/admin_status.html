@@ -60,7 +60,11 @@
 
                     const existingChart = Chart.getChart(canvas);
                     if (existingChart) {
-                        existingChart.destroy();
+                        existingChart.data.labels = data.map(d => d.label);
+                        existingChart.data.datasets[0].data = data.map(d => d.value);
+                        existingChart.data.datasets[0].label = label;
+                        existingChart.update();
+                        return;
                     }
 
                     this.charts[canvasId] = new Chart(ctx, {
@@ -143,14 +147,23 @@
 
             init() {
                 this.load();
-                setInterval(() => {
-                    const token = sessionStorage.getItem('adminToken');
-                    if (token) {
-                        axios.get('/admin/api/platform/status', { headers: { Authorization: 'Bearer ' + token } })
-                            .then(res => this.status = res.data)
-                            .catch(e => console.error('Status background refresh failed', e));
-                    }
-                }, 60000);
+                
+                const connectWs = () => {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activities`);
+                    
+                    ws.onmessage = async (event) => {
+                        if (event.data === 'update_activities') {
+                            this.load();
+                        }
+                    };
+                    
+                    ws.onclose = () => {
+                        setTimeout(connectWs, 3000);
+                    };
+                };
+                
+                connectWs();
             }
         }));
     });
@@ -235,7 +248,7 @@
     </div>
 
     <!-- Charts Grid -->
-    <div x-show="metrics" class="grid-cards mb-xl" style="grid-template-columns: 1fr 1fr;">
+    <div x-show="metrics" class="grid-cards mb-xl">
         <div class="card">
             <h3 class="text-muted mb-md" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
                 Request Volume
