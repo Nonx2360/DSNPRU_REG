@@ -1,8 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .database import Base, engine, SessionLocal
 from .websocket_manager import manager
@@ -91,6 +93,21 @@ def create_app() -> FastAPI:
     @app.get("/admin/students")
     async def admin_students_page(request: Request):
         return templates.TemplateResponse(request=request, name="admin_students.html")
+
+    @app.exception_handler(StarletteHTTPException)
+    async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+        accepts_html = "text/html" in request.headers.get("accept", "").lower()
+        if accepts_html and exc.status_code in {401, 403, 404}:
+            return templates.TemplateResponse(
+                request=request,
+                name="404.html",
+                status_code=404,
+            )
+
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
 
     @app.websocket("/ws/activities")
     async def websocket_activities(websocket: WebSocket):
