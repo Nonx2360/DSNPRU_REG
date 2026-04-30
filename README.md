@@ -1,8 +1,8 @@
 # DSNPRU_REG - School Activity Registration System
 
-**Version 3.2.0**
+**Version 3.3.0**
 
-A comprehensive web-based activity registration system designed for schools. It allows students to view and register for activities, while providing administrators with powerful tools to manage activities, students, and registration data. Built with **FastAPI** for high performance and **Alpine.js** and **Tailwind CSS** for a responsive, modern frontend.
+A comprehensive web-based activity registration system designed for schools. It allows students to view and register for activities, while providing administrators with powerful tools to manage activities, students, and registration data. Built with **FastAPI** for high performance, **WebSockets** for real-time updates, **Alpine.js** for interactivity, and a **custom CSS design system** with full dark mode support.
 
 ---
 
@@ -40,10 +40,12 @@ DSNPRU_REG solves the challenge of manual activity registration in schools:
 The student-facing side is designed for ease of use and quick access to information:
 
 - **Activity Browser**: View all available activities with descriptions, remaining seats, and schedules.
-- **Real-time Status**: Clearly see which activities are Open or Closed.
+- **Real-time Status**: Clearly see which activities are Open or Closed, updated instantly via WebSocket.
 - **Activity Type Badges**: Visual indicators showing whether an activity is Individual (เดี่ยว) or Team/Partner (ทีม/คู่).
 - **Responsive Design**: Works perfectly on mobile phones, tablets, and desktop computers.
-- **System Announcements**: View important messages broadcast by administrators with color-coded alerts.
+- **Dark Mode**: Full dark mode support with automatic theme persistence via localStorage.
+- **System Announcements**: View important messages broadcast by administrators with color-coded banners, updated in real-time via WebSocket.
+- **Urgent Announcements**: Critical announcements appear as modal popups requiring user acknowledgement, with an optional "don't show again" checkbox.
 - **Student Context Display**: After entering student number, view registered activities and remaining group quotas.
 - **Partner Search Autocomplete**: Search for partners by name or student number with autocomplete dropdown.
 - **Registration Status**: Display whether registration is active or waitlisted.
@@ -120,9 +122,13 @@ A comprehensive backend for school staff, accessed via a **hidden login portal**
 
 **System Announcements**
 - **Broadcast Messages**: Create and manage system-wide announcements visible on the public page.
-- **Color-Coded Alerts**: Assign colors to announcements for visual emphasis (indigo, red, green, etc.).
+- **Color-Coded Alerts**: Assign colors to announcements for visual emphasis (Rose, Indigo, Emerald, Amber).
+- **Urgent Announcements**: Mark announcements as "urgent" to display as a modal popup instead of a banner bar.
+  - Users can check "ไม่แสดงอีก" (don't show again) to dismiss per-announcement.
+  - Admin edits/reactivation automatically resets dismissed state for all users.
 - **Activation Toggle**: Enable/disable announcements without deleting them.
-- **Timestamp Tracking**: Each announcement records creation time for audit purposes.
+- **Real-time Updates**: Announcements are pushed to all connected clients instantly via WebSocket.
+- **Timestamp Tracking**: Each announcement records creation time, updated on every edit.
 
 **Data Export**
 - **Excel Export**: Comprehensive registration lists with activity, student name, classroom, student ID, and sequence number columns.
@@ -149,9 +155,14 @@ graph TD
         direction TB
         
         subgraph Presentation["Presentation & Routing"]
-            Static["Static Files<br>(CSS/JS/Images)"]
+            Static["Static Files<br>(Custom CSS/JS/Images)"]
             Templates["Jinja2 Templates<br>(HTML Rendering)"]
             APIRouter["API Router"]
+        end
+
+        subgraph Realtime["Real-time Layer"]
+            WSManager["WebSocket Manager<br>(ConnectionManager)"]
+            WSEndpoint["WS Endpoint<br>(/ws/activities)"]
         end
 
         subgraph Logic["Business Logic Layer"]
@@ -169,14 +180,21 @@ graph TD
     end
 
     subgraph Infrastructure["Infrastructure"]
-        SQLite[("SQLite Database<br>(sql_app.db)")]
+        SQLite[("SQLite Database<br>(sicday.db)")]
         FileSystem["File System<br>(Logs/Exports)"]
     end
 
     %% Client Interactions
     Student -->|HTTP GET/POST| APIRouter
     Admin -->|HTTP GET/POST| APIRouter
+    Student -.->|WebSocket| WSEndpoint
+    Admin -.->|WebSocket| WSEndpoint
     
+    %% WebSocket Flow
+    WSEndpoint --> WSManager
+    AdminLogic -->|broadcast| WSManager
+    PublicLogic -->|broadcast| WSManager
+
     %% Internal Server Flow
     APIRouter --> Templates
     APIRouter --> Static
@@ -208,13 +226,20 @@ graph TD
     - **Business Logic** verifies quotas, checks classroom restrictions, validates team sizes, and validates input via **Pydantic**.
     - **Logging Utility** (`utils.py`) intercepts critical actions and writes them to the `admin_logs` table.
 
-3.  **Persistence**:
-    - **SQLAlchemy** translates Python objects to SQL queries.
-    - **SQLite** stores persistent data in `sql_app.db`, ensuring ACID compliance for transactions (like registration claiming).
+3.  **Real-time Updates**:
+    - **WebSocket Manager** maintains a pool of active client connections.
+    - When activities or announcements change, the backend broadcasts events (`update_activities`, `update_announcements`) to all connected clients.
+    - Clients automatically re-fetch data on receiving a broadcast, ensuring all users see changes instantly.
+    - Auto-reconnect with 3-second backoff on disconnection.
 
-4.  **Presentation**:
+4.  **Persistence**:
+    - **SQLAlchemy** translates Python objects to SQL queries.
+    - **SQLite** stores persistent data in `sicday.db`, ensuring ACID compliance for transactions (like registration claiming).
+
+5.  **Presentation**:
     - **Jinja2** renders HTML templates on the server side, injecting dynamic data (e.g., list of activities).
     - **Alpine.js** on the client side handles interactivity (validations, modals, async fetch requests) without full page reloads.
+    - **Custom CSS Design System** with CSS custom properties (tokens), BEM naming, and full dark mode support.
 
 ### Technology Stack
 
@@ -226,11 +251,14 @@ graph TD
 
 **Frontend**
 - **HTML5 & Jinja2 Templates**: Server-side rendering for SEO and speed.
-- **Tailwind CSS**: Utility-first CSS framework for rapid UI development.
+- **Custom CSS Design System**: Token-based CSS with BEM naming, full dark mode, and responsive layouts.
 - **Alpine.js**: Lightweight JavaScript framework for adding interactivity.
 - **SweetAlert2 & Toastify**: For beautiful, responsive alerts and notifications.
 - **Chart.js**: For data visualization on the dashboard.
-- **Lucide Icons**: Modern icon set for UI elements.
+- **Heroicons (SVG)**: Inline SVG icons for consistent, scalable UI elements.
+
+**Real-time**
+- **WebSocket (native)**: Push-based updates for activities and announcements via `/ws/activities`.
 
 **Data & Export**
 - **SQLite**: Lightweight, serverless database engine.
@@ -314,7 +342,7 @@ On the first run, if no admin exists, the system automatically creates:
 **⚠️ SECURITY WARNING**: Change this password immediately after your first login using the "Change Password" feature in the admin dashboard.
 
 **Database:**
-The system uses `sql_app.db` (SQLite) created automatically in the root directory. Ensure write permissions for the application.
+The system uses `sicday.db` (SQLite) created automatically in the root directory. Ensure write permissions for the application.
 
 **Environment Setup:**
 No environment variables are required for basic operation. The system can run standalone after dependency installation.
@@ -375,8 +403,10 @@ No environment variables are required for basic operation. The system can run st
 
 7.  **Broadcast Announcements**:
     - Create system-wide announcements visible on the public page.
-    - Set color for visual emphasis.
+    - Set color for visual emphasis (Rose, Indigo, Emerald, Amber).
+    - **Mark as Urgent**: Toggle "ประกาศด่วน" to show announcement as a popup instead of a banner.
     - Activate/deactivate announcements without deletion.
+    - All changes push to clients in real-time via WebSocket.
 
 8.  **Export Data**:
     - Go to "Export".
@@ -486,8 +516,14 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 - `GET /admin/api/logs`: View system event logs (Superuser only) - includes all admin actions and timestamps.
 
 ### Announcements
-- `POST /admin/api/announcements`: Create a system announcement (Superuser only).
+- `GET /admin/api/announcements`: List all announcements (requires auth).
+- `POST /admin/api/announcements`: Create a system announcement (accepts `message`, `is_active`, `is_urgent`, `color`).
+- `PUT /admin/api/announcements/{ann_id}`: Update an announcement (timestamp refreshes automatically).
+- `DELETE /admin/api/announcements/{ann_id}`: Delete an announcement.
 - `GET /api/announcements/active`: Get active announcements visible on public page.
+
+### WebSocket
+- `WS /ws/activities`: Real-time event stream. Broadcasts `update_activities` and `update_announcements` events.
 
 ### Public (Student) Endpoints
 - `GET /api/activities`: List all open activities with `type`, `max_team_size`, remaining seats, and group information.
@@ -561,8 +597,9 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 - `id`: Integer, Primary Key
 - `message`: String, Announcement message content
 - `is_active`: Boolean, Whether announcement is visible
-- `color`: String, Color code for visual emphasis (indigo, red, green, etc.)
-- `timestamp`: DateTime, Creation timestamp
+- `is_urgent`: Boolean, Whether announcement shows as popup (default false)
+- `color`: String, Color code for visual emphasis (rose, indigo, emerald, amber)
+- `timestamp`: DateTime, Creation/update timestamp (refreshed on every edit)
 
 **request_logs**
 - `id`: Integer, Primary Key
@@ -583,7 +620,31 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 
 ## Version History
 
-### V3.2.0 (Current)
+### V3.3.0 (Current)
+
+**Real-time WebSocket Architecture**
+- **WebSocket Manager**: Centralized connection pool with auto-reconnect for all clients.
+- **Live Activity Updates**: Registration/cancellation changes push instantly to all connected browsers.
+- **Live Announcement Updates**: Announcement create/edit/delete pushes to all clients in real-time.
+- **Event-Driven**: Backend broadcasts `update_activities` and `update_announcements` events.
+
+**Urgent Announcements**
+- **Popup Mode**: Mark announcements as urgent to display as a SweetAlert modal popup instead of a top banner.
+- **User Dismissal**: "ไม่แสดงอีก" checkbox lets users dismiss a specific announcement.
+- **Auto-Reset on Edit**: Admin edits/reactivation automatically resets dismissed state (timestamp-based key).
+- **Separation of Concerns**: Non-urgent = banner bar only. Urgent = popup only.
+
+**Custom CSS Design System**
+- **Replaced Tailwind CSS**: Migrated to a custom CSS design system with CSS custom properties (tokens) and BEM naming.
+- **Full Dark Mode**: Comprehensive dark mode with proper contrast, toggled via navbar with theme persistence.
+- **SVG Icons**: Replaced all emojis with inline Heroicons SVGs for consistent rendering across platforms.
+
+**Platform Status & Analytics Dashboard**
+- **Real-time Admin Dashboards**: Analytics and platform status pages use WebSocket for live updates.
+- **System Health Monitoring**: API health, DB health, uptime, error rates, and response times.
+- **Request Logging**: All API requests tracked with method, path, status code, and response time.
+
+### V3.2.0
 
 **System Monitoring & Analytics**
 - **Request Logging**: All API requests are tracked with method, path, status code, and response time.
@@ -652,7 +713,7 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 ### Admin Login Issues
 
 **Problem**: "Login Failed" message even with correct credentials.
-- **Solution 1**: Verify default admin account exists. If not, delete `sql_app.db` and restart the server to recreate it.
+- **Solution 1**: Verify default admin account exists. If not, delete `sicday.db` and restart the server to recreate it.
 - **Solution 2**: Check that you're using the correct username and password (default: `admin` / `admin123`).
 - **Solution 3**: Ensure your JWT token hasn't expired - try clearing browser cookies and login again.
 
@@ -666,8 +727,8 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 - **Solution**: Ensure no other process has the database open (check file explorer, SQLite browser tools, etc.). Restart the application.
 
 **Problem**: Database migrations fail.
-- **Solution 1**: Backup your `sql_app.db` file.
-- **Solution 2**: Delete `sql_app.db` and restart the server to create a fresh database.
+- **Solution 1**: Backup your `sicday.db` file.
+- **Solution 2**: Delete `sicday.db` and restart the server to create a fresh database.
 - **Solution 3**: If upgrading, ensure you run all migration scripts in order: `migrate_db.py`, then `migrate_sequence.py`.
 
 ### Activity Registration Issues
@@ -734,8 +795,13 @@ The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
 
 **Problem**: Announced messages not appearing on public page.
 - **Solution 1**: Make sure the announcement is marked as `is_active = true` in the database.
-- **Solution 2**: Refresh the page in your browser.
+- **Solution 2**: Check the WebSocket connection in the browser console (should connect to `/ws/activities`).
 - **Solution 3**: Clear browser cache (Ctrl+Shift+Delete in most browsers).
+
+**Problem**: Urgent announcement popup not showing.
+- **Solution 1**: Check if `is_urgent` is `true` for the announcement in the admin panel.
+- **Solution 2**: Clear localStorage (`localStorage.clear()` in browser console) to reset dismissed state.
+- **Solution 3**: Edit and re-save the announcement in admin panel — this refreshes the timestamp and resets all dismissals.
 
 ---
 
