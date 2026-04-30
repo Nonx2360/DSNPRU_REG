@@ -95,6 +95,7 @@ class Announcement(Base):
     id = Column(Integer, primary_key=True, index=True)
     message = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    is_urgent = Column(Boolean, default=False)
     color = Column(String, default="indigo")
     timestamp = Column(DateTime, default=datetime.now)
 

@@ -163,6 +163,7 @@ class Token(BaseModel):
 class AnnouncementBase(BaseModel):
     message: str
     is_active: bool = True
+    is_urgent: bool = False
     color: str = "indigo"
 
 class AnnouncementCreate(AnnouncementBase):
@@ -171,6 +172,7 @@ class AnnouncementCreate(AnnouncementBase):
 class AnnouncementUpdate(BaseModel):
     message: Optional[str] = None
     is_active: Optional[bool] = None
+    is_urgent: Optional[bool] = None
     color: Optional[str] = None
 
 class Announcement(AnnouncementBase):

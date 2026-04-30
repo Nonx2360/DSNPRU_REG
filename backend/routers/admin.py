@@ -697,6 +697,7 @@ def create_announcement(
     ann = models.Announcement(
         message=ann_in.message,
         is_active=ann_in.is_active,
+        is_urgent=ann_in.is_urgent,
         color=ann_in.color
     )
     db.add(ann)

@@ -7,7 +7,7 @@
             announcements: [],
             showCreateModal: false,
             showEditModal: false,
-            form: { id: null, message: '', is_active: true, color: 'indigo' },
+            form: { id: null, message: '', is_active: true, is_urgent: false, color: 'indigo' },
             colors: [
                 { value: 'rose', label: 'แดง (Rose)' },
                 { value: 'indigo', label: 'น้ำเงิน (Indigo)' },
@@ -31,7 +31,7 @@
                 }
             },
             openCreate() {
-                this.form = { id: null, message: '', is_active: true, color: 'indigo' };
+                this.form = { id: null, message: '', is_active: true, is_urgent: false, color: 'indigo' };
                 this.showCreateModal = true;
             },
             openEdit(ann) {
@@ -129,7 +129,10 @@
                 <template x-for="ann in announcements" :key="ann.id">
                     <tr style="border-bottom: 1px solid var(--color-border);">
                         <td style="padding: var(--space-sm) var(--space-md);">
-                            <div style="font-weight: 700; margin-bottom: 4px;" x-text="ann.message"></div>
+                            <div style="font-weight: 700; margin-bottom: 4px;">
+                                <span x-show="ann.is_urgent" class="badge badge--danger border-none" style="margin-right: 4px; padding: 2px 6px; font-size: 0.65rem;">ด่วน</span>
+                                <span x-text="ann.message"></span>
+                            </div>
                             <div class="text-muted" style="font-size: 0.65rem;" x-text="new Date(ann.timestamp).toLocaleString('th-TH')"></div>
                         </td>
                         <td style="padding: var(--space-sm) var(--space-md);">
@@ -201,6 +204,10 @@
                 <div class="form-group" style="display: flex; align-items: center; gap: var(--space-sm);">
                     <input type="checkbox" x-model="form.is_active" style="cursor: pointer;">
                     <span style="font-size: 0.875rem; font-weight: 700;">เปิดใช้งานทันที (แสดงบนหน้าเว็บ)</span>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: var(--space-sm);">
+                    <input type="checkbox" x-model="form.is_urgent" style="cursor: pointer;">
+                    <span style="font-size: 0.875rem; font-weight: 700; color: var(--color-danger);">ประกาศด่วน (แสดงเป็น Popup ให้ผู้ใช้กดยืนยัน)</span>
                 </div>
 
                 <div style="display: flex; gap: var(--space-md); margin-top: var(--space-xl);">

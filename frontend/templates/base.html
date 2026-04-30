@@ -93,6 +93,25 @@
                 if (!banners || banners.length === 0) return;
                 
                 banners.forEach(ann => {
+                    // Urgent Popup Logic
+                    if (ann.is_urgent) {
+                        const readKey = 'read_urgent_' + ann.id;
+                        if (!localStorage.getItem(readKey)) {
+                            Swal.fire({
+                                title: 'ประกาศด่วน!',
+                                text: ann.message,
+                                icon: 'warning',
+                                confirmButtonText: 'รับทราบ',
+                                confirmButtonColor: '#D95D39',
+                                allowOutsideClick: false
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    localStorage.setItem(readKey, 'true');
+                                }
+                            });
+                        }
+                    }
+
                     const div = document.createElement('div');
                     div.id = `ann-${ann.id}`;
                     div.className = `alert-banner`;
