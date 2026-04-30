@@ -690,6 +690,7 @@ def admin_list_announcements(
 def create_announcement(
     ann_in: schemas.AnnouncementCreate,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -702,6 +703,7 @@ def create_announcement(
     db.commit()
     db.refresh(ann)
     log_action(db, admin.username, "CREATE_ANNOUNCEMENT", f"Created announcement", request)
+    background_tasks.add_task(manager.broadcast, "update_announcements")
     return ann
 
 
@@ -710,6 +712,7 @@ def update_announcement(
     ann_id: int,
     ann_in: schemas.AnnouncementUpdate,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -723,6 +726,7 @@ def update_announcement(
     db.commit()
     db.refresh(ann)
     log_action(db, admin.username, "UPDATE_ANNOUNCEMENT", f"Updated announcement ID {ann.id}", request)
+    background_tasks.add_task(manager.broadcast, "update_announcements")
     return ann
 
 
@@ -730,6 +734,7 @@ def update_announcement(
 def delete_announcement(
     ann_id: int,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: models.Admin = Depends(get_current_admin),
 ):
@@ -740,6 +745,7 @@ def delete_announcement(
     db.delete(ann)
     db.commit()
     log_action(db, admin.username, "DELETE_ANNOUNCEMENT", f"Deleted announcement ID {ann_id}", request)
+    background_tasks.add_task(manager.broadcast, "update_announcements")
     return
 
 # --- Platform Status Endpoints ---
