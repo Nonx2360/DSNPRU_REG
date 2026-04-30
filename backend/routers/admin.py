@@ -724,6 +724,7 @@ def update_announcement(
     for field, value in ann_in.dict(exclude_unset=True).items():
         setattr(ann, field, value)
 
+    ann.timestamp = datetime.now()
     db.commit()
     db.refresh(ann)
     log_action(db, admin.username, "UPDATE_ANNOUNCEMENT", f"Updated announcement ID {ann.id}", request)

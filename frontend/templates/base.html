@@ -93,25 +93,33 @@
                 if (!banners || banners.length === 0) return;
                 
                 banners.forEach(ann => {
-                    // Urgent Popup Logic
                     if (ann.is_urgent) {
-                        const readKey = 'read_urgent_' + ann.id;
-                        if (!localStorage.getItem(readKey)) {
+                        // Urgent = popup only, no banner
+                        const dismissKey = 'dismiss_urgent_' + ann.id + '_' + ann.timestamp;
+                        if (localStorage.getItem(dismissKey)) return; // user dismissed this version
+
+                        setTimeout(() => {
                             Swal.fire({
                                 title: 'ประกาศด่วน!',
-                                text: ann.message,
+                                html: '<div style="font-size:1.1rem; margin-bottom:1rem;">' + ann.message + '</div>' +
+                                      '<label style="font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:6px; justify-content:center; opacity:0.8;">' +
+                                      '<input type="checkbox" id="swal-dismiss-check"> ไม่แสดงอีก</label>',
                                 icon: 'warning',
                                 confirmButtonText: 'รับทราบ',
                                 confirmButtonColor: '#D95D39',
-                                allowOutsideClick: false
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    localStorage.setItem(readKey, 'true');
+                                allowOutsideClick: false,
+                                allowEscapeKey: false
+                            }).then(() => {
+                                const cb = document.getElementById('swal-dismiss-check');
+                                if (cb && cb.checked) {
+                                    localStorage.setItem(dismissKey, 'true');
                                 }
                             });
-                        }
+                        }, 300);
+                        return; // skip banner
                     }
 
+                    // Non-urgent = banner only
                     const div = document.createElement('div');
                     div.id = `ann-${ann.id}`;
                     div.className = `alert-banner`;
