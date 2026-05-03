@@ -70,7 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-
+docs
 # PyBuilder
 .pybuilder/
 target/
@@ -157,6 +157,7 @@ sql_app.db
 
 .gemini
 .claude
+.codex
 
 favicon.ico
 frontend/favicon.ico
