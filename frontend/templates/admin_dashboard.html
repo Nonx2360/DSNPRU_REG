@@ -186,6 +186,13 @@
                 </svg>
                 สถานะระบบ
             </a>
+            <a href="/admin/settings" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--color-primary);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317a1.724 1.724 0 013.35 0 1.724 1.724 0 002.573 1.066 1.724 1.724 0 012.915 1.675 1.724 1.724 0 001.066 2.573 1.724 1.724 0 010 3.35 1.724 1.724 0 00-1.066 2.573 1.724 1.724 0 01-2.915 1.675 1.724 1.724 0 00-2.573 1.066 1.724 1.724 0 01-3.35 0 1.724 1.724 0 00-2.573-1.066 1.724 1.724 0 01-2.915-1.675 1.724 1.724 0 00-1.066-2.573 1.724 1.724 0 010-3.35 1.724 1.724 0 001.066-2.573 1.724 1.724 0 012.915-1.675 1.724 1.724 0 002.573-1.066z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                ตั้งค่าเมล
+            </a>
             <a href="/admin/export" class="btn btn--outline" style="padding: 6px 12px; font-size: 0.75rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -256,6 +263,17 @@
                 </div>
             </div>
             <div style="font-size: 2rem; font-weight: 900; line-height: 1;" x-text="stats?.activities?.length ?? 0"></div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); gap: var(--space-sm);">
+                <div class="text-muted" style="font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">WAITLIST EMAIL</div>
+                <div class="badge" :class="stats?.mail_configured ? 'badge--success' : 'badge--warning'">
+                    <span x-text="stats?.mail_configured ? 'READY' : 'SETUP'"></span>
+                </div>
+            </div>
+            <div style="font-size: 1.125rem; font-weight: 700; line-height: 1.3; margin-bottom: var(--space-sm);" x-text="stats?.mail_configured ? 'พร้อมส่งอีเมลยืนยันคิว' : 'ยังไม่ตั้งค่าอีเมลยืนยันคิว'"></div>
+            <a href="/admin/settings" class="btn btn--outline" style="font-size: 0.75rem; padding: 6px 12px;">เปิดหน้าตั้งค่า</a>
         </div>
     </div>
 

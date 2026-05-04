@@ -7,7 +7,7 @@
 
         Alpine.data('registrationPage', () => ({
             activities: [],
-            form: { name: '', classroom: '', number: '', activity_id: null, sequence: '' },
+            form: { name: '', classroom: '', number: '', activity_id: null, sequence: '', email: '' },
             searchQuery: '',
             searchResults: [],
             now: new Date(),
@@ -79,6 +79,9 @@
                     this.partners.push({ number: '', name: '', query: '', results: [] });
                 }
             },
+            waitlistRequiresEmail() {
+                return !!(this.selectedActivity && this.selectedActivity.remaining_seats === 0);
+            },
 
             async loadActivities() {
                 const res = await axios.get('/api/activities');
@@ -129,6 +132,10 @@
                     Swal.fire('กรุณากรอกข้อมูลให้ครบ', 'ต้องระบุชื่อ-สกุล หรือ เลขประจำตัวนักเรียน อย่างใดอย่างหนึ่ง และ เลือกกิจกรรม', 'warning');
                     return;
                 }
+                if (this.waitlistRequiresEmail() && !this.form.email.trim()) {
+                    Swal.fire('ต้องระบุอีเมล', 'กิจกรรมนี้เต็มแล้ว กรุณากรอกอีเมลเพื่อรับการยืนยันการเข้าคิวสำรอง', 'warning');
+                    return;
+                }
 
                 const payload = {
                     ...this.form,
@@ -147,6 +154,7 @@
                     if (data.success) {
                         Swal.fire('สำเร็จ', data.message, 'success');
                         this.form.activity_id = null;
+                        this.form.email = '';
                         this.selectedActivity = null;
                         this.partners = [];
                         this.teamName = '';
@@ -324,6 +332,19 @@
                                     </template>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="form-group" x-show="selectedActivity" x-cloak style="margin-top: var(--space-md);">
+                            <div style="display: flex; justify-content: space-between; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-xs);">
+                                <label class="form-label" for="waitlist-email" style="margin-bottom: 0;">อีเมลสำหรับยืนยันคิวสำรอง</label>
+                                <span class="badge" :class="waitlistRequiresEmail() ? 'badge--warning' : 'badge--info'">
+                                    <span x-text="waitlistRequiresEmail() ? 'จำเป็น' : 'แนะนำ'"></span>
+                                </span>
+                            </div>
+                            <input type="email" id="waitlist-email" x-model="form.email" class="form-input" placeholder="name@example.com">
+                            <p class="text-muted" style="font-size: 0.75rem; margin-top: 6px; margin-bottom: 0;">
+                                ระบบจะใช้อีเมลนี้ส่งการยืนยันเมื่อกิจกรรมเต็มและคุณถูกจัดเข้าคิวสำรอง
+                            </p>
                         </div>
                     </div>
 

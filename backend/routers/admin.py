@@ -10,6 +10,8 @@ import os  # Added for log file reading
 from .. import models, schemas
 from ..auth import authenticate_admin, create_access_token, get_current_admin, get_current_superuser, get_password_hash, verify_password
 from ..database import get_db
+from ..env_settings import mail_settings_complete, serialize_mail_settings, write_mail_settings
+from ..mail_service import send_waitlist_promoted_email, waitlist_mail_ready
 from ..utils import log_action
 from ..websocket_manager import manager
 import asyncio
@@ -125,6 +127,48 @@ def change_password(
     db.commit()
     log_action(db, admin.username, "CHANGE_PASSWORD", "Changed own password", request)
     return
+
+
+@router.get("/api/settings/mail", response_model=schemas.MailSettingsResponse)
+def get_mail_settings(
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    return schemas.MailSettingsResponse(**serialize_mail_settings())
+
+
+@router.put("/api/settings/mail", response_model=schemas.MailSettingsResponse)
+def update_mail_settings(
+    settings_in: schemas.MailSettingsUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: models.Admin = Depends(get_current_admin),
+):
+    if settings_in.mail_port <= 0 or settings_in.mail_port > 65535:
+        raise HTTPException(status_code=400, detail="MAIL_PORT ต้องอยู่ระหว่าง 1 ถึง 65535")
+
+    required_fields = {
+        "MAIL_USERNAME": settings_in.mail_username,
+        "MAIL_FROM": settings_in.mail_from,
+        "MAIL_SERVER": settings_in.mail_server,
+        "MAIL_FROM_NAME": settings_in.mail_from_name,
+    }
+    for key, value in required_fields.items():
+        if not str(value).strip():
+            raise HTTPException(status_code=400, detail=f"{key} ต้องไม่ว่าง")
+
+    write_mail_settings(
+        {
+            "MAIL_USERNAME": settings_in.mail_username,
+            "MAIL_PASSWORD": settings_in.mail_password if settings_in.mail_password else None,
+            "MAIL_FROM": settings_in.mail_from,
+            "MAIL_PORT": str(settings_in.mail_port),
+            "MAIL_SERVER": settings_in.mail_server,
+            "MAIL_FROM_NAME": settings_in.mail_from_name,
+        }
+    )
+    log_action(db, admin.username, "UPDATE_MAIL_SETTINGS", "Updated waitlist mail settings", request)
+    return schemas.MailSettingsResponse(**serialize_mail_settings())
 
 
 @router.post("/api/activity_groups", response_model=schemas.ActivityGroup)
@@ -412,6 +456,14 @@ def delete_registration(
         if next_in_line:
             next_in_line.status = "registered"
             db.commit()
+            if next_in_line.contact_email and waitlist_mail_ready():
+                background_tasks.add_task(
+                    send_waitlist_promoted_email,
+                    next_in_line.contact_email,
+                    next_in_line.student.name,
+                    activity.title,
+                    next_in_line.team_name,
+                )
             try:
                 log_action(db, "SYSTEM", "PROMOTE", f"Promoted student.id={next_in_line.student_id} to registered for '{activity.title}' via ADMIN removal", request)
             except:
@@ -468,6 +520,7 @@ def dashboard_stats(
     return schemas.DashboardStats(
         total_students=total_students,
         total_registrations=total_registrations,
+        mail_configured=mail_settings_complete(),
         activities=stats_activities,
     )
 

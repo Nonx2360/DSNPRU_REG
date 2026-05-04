@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าระบบอีเมล - DSNPRU_REG{% endblock %}
+{% block head_extra %}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('mailSettingsPage', () => ({
+            loading: true,
+            saving: false,
+            status: { is_configured: false, has_password: false },
+            form: {
+                mail_username: '',
+                mail_password: '',
+                mail_from: '',
+                mail_port: 587,
+                mail_server: 'smtp.gmail.com',
+                mail_from_name: 'DSNPRU Waitlist'
+            },
+            async load() {
+                const token = sessionStorage.getItem('adminToken');
+                if (!token) {
+                    window.location.href = '/admin/login';
+                    return;
+                }
+
+                try {
+                    const res = await axios.get('/admin/api/settings/mail', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    const data = res.data;
+                    this.form.mail_username = data.mail_username || '';
+                    this.form.mail_from = data.mail_from || '';
+                    this.form.mail_port = data.mail_port || 587;
+                    this.form.mail_server = data.mail_server || 'smtp.gmail.com';
+                    this.form.mail_from_name = data.mail_from_name || 'DSNPRU Waitlist';
+                    this.form.mail_password = '';
+                    this.status = {
+                        is_configured: data.is_configured,
+                        has_password: data.has_password
+                    };
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', e.response?.data?.detail || 'ไม่สามารถโหลดการตั้งค่าได้', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+            envPreview() {
+                const previewPassword = this.form.mail_password || (this.status.has_password ? '********' : '');
+                return [
+                    `MAIL_USERNAME=${this.form.mail_username || ''}`,
+                    `MAIL_PASSWORD=${previewPassword}`,
+                    `MAIL_FROM=${this.form.mail_from || ''}`,
+                    `MAIL_PORT=${this.form.mail_port || 587}`,
+                    `MAIL_SERVER=${this.form.mail_server || ''}`,
+                    `MAIL_FROM_NAME=${this.form.mail_from_name || ''}`
+                ].join('\n');
+            },
+            async save() {
+                const token = sessionStorage.getItem('adminToken');
+                if (!token) {
+                    window.location.href = '/admin/login';
+                    return;
+                }
+
+                this.saving = true;
+                try {
+                    const res = await axios.put('/admin/api/settings/mail', this.form, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    const data = res.data;
+                    this.status = {
+                        is_configured: data.is_configured,
+                        has_password: data.has_password
+                    };
+                    this.form.mail_password = '';
+                    Swal.fire('บันทึกสำเร็จ', 'อัปเดตการตั้งค่าอีเมลแล้ว', 'success');
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', e.response?.data?.detail || 'ไม่สามารถบันทึกการตั้งค่าได้', 'error');
+                } finally {
+                    this.saving = false;
+                }
+            },
+            init() {
+                this.load();
+            }
+        }));
+    });
+</script>
+{% endblock %}
+{% block content %}
+<section x-data="mailSettingsPage()">
+    <header class="mb-lg" style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-md); align-items: center;">
+        <div>
+            <h1>ตั้งค่าระบบอีเมล Waitlist</h1>
+            <p class="text-muted" style="margin-bottom: 0;">สำหรับส่งอีเมลยืนยันเมื่อผู้สมัครถูกจัดเข้าคิวสำรอง</p>
+        </div>
+        <a href="/admin/dashboard" class="btn btn--outline">กลับไปแดชบอร์ด</a>
+    </header>
+
+    <div x-show="loading" class="card text-center" x-cloak>
+        <p style="margin-bottom: 0;">กำลังโหลดการตั้งค่า...</p>
+    </div>
+
+    <div x-show="!loading" x-cloak style="display: grid; gap: var(--space-lg);">
+        <div class="card" style="display: grid; gap: var(--space-md); background: linear-gradient(135deg, rgba(26,43,76,0.08), rgba(217,93,57,0.08));">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-md); align-items: center;">
+                <div>
+                    <div class="form-label" style="margin-bottom: 6px;">สถานะการเชื่อมต่อ</div>
+                    <h2 style="margin-bottom: 0;" x-text="status.is_configured ? 'พร้อมใช้งาน' : 'ต้องตั้งค่าเพิ่มเติม'"></h2>
+                </div>
+                <span class="badge" :class="status.is_configured ? 'badge--success' : 'badge--warning'">
+                    <span x-text="status.is_configured ? 'MAIL READY' : 'INCOMPLETE'"></span>
+                </span>
+            </div>
+            <p class="text-muted" style="margin-bottom: 0;">
+                ระบบจะอ่านและบันทึกค่าเหล่านี้ลงไฟล์ <strong>.env</strong> ทันที หลังบันทึกไม่ต้องรีสตาร์ตเพื่อใช้งานค่าส่งเมลใหม่
+            </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-lg);">
+            <div class="card">
+                <h2 style="font-size: 1rem;">ตั้งค่า SMTP</h2>
+                <div class="form-group">
+                    <label class="form-label">MAIL_USERNAME</label>
+                    <input type="text" x-model="form.mail_username" class="form-input" placeholder="your-email@gmail.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">MAIL_PASSWORD</label>
+                    <input type="password" x-model="form.mail_password" class="form-input" :placeholder="status.has_password ? 'เว้นว่างเพื่อใช้รหัสเดิม' : 'App password / SMTP password'">
+                    <p class="text-muted" style="font-size: 0.75rem; margin-top: 6px; margin-bottom: 0;">ถ้ามีรหัสเดิมอยู่แล้ว สามารถเว้นว่างเพื่อไม่เปลี่ยนค่าได้</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">MAIL_FROM</label>
+                    <input type="text" x-model="form.mail_from" class="form-input" placeholder="your-email@gmail.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">MAIL_PORT</label>
+                    <input type="number" x-model.number="form.mail_port" class="form-input" min="1" max="65535">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">MAIL_SERVER</label>
+                    <input type="text" x-model="form.mail_server" class="form-input" placeholder="smtp.gmail.com">
+                </div>
+                <div class="form-group mb-lg">
+                    <label class="form-label">MAIL_FROM_NAME</label>
+                    <input type="text" x-model="form.mail_from_name" class="form-input" placeholder="DSNPRU Waitlist">
+                </div>
+                <button @click="save()" class="btn btn--accent btn--full" :disabled="saving">
+                    <span x-text="saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'"></span>
+                </button>
+            </div>
+
+            <div class="card">
+                <h2 style="font-size: 1rem;">รูปแบบไฟล์ .env</h2>
+                <p class="text-muted" style="font-size: 0.875rem;">ค่าที่บันทึกจะอยู่ในรูปแบบนี้เพื่อให้ระบบ FastAPI-Mail ใช้งานได้ทันที</p>
+                <pre style="margin: 0; padding: var(--space-md); background: var(--color-bg-base); border: 1px solid var(--color-border); overflow-x: auto; font-size: 0.8125rem; line-height: 1.6;"><code x-text="envPreview()"></code></pre>
+                <div style="margin-top: var(--space-lg); padding: var(--space-md); border: 1px solid var(--color-border); background: var(--color-surface-hover);">
+                    <div class="form-label" style="margin-bottom: 6px;">คำแนะนำ</div>
+                    <p style="font-size: 0.875rem; margin-bottom: 8px;">สำหรับ Gmail ให้ใช้ App Password แทนรหัสผ่านปกติ และใช้พอร์ต 587 กับ `smtp.gmail.com`</p>
+                    <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 0;">เมื่อกิจกรรมเต็ม นักเรียนจะต้องกรอกอีเมลก่อนเข้าคิวสำรอง และระบบจะใช้อีเมลนี้ส่งข้อความยืนยันการเข้าคิว</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

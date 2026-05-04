@@ -4,6 +4,7 @@ SQLAlchemy
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt==4.0.1
+fastapi-mail
 reportlab
 openpyxl
 jinja2

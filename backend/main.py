@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy import inspect, text
 
 from .database import Base, engine, SessionLocal
 from .websocket_manager import manager
@@ -14,6 +15,27 @@ from . import models
 
 
 templates = Jinja2Templates(directory="frontend/templates")
+
+
+def ensure_runtime_schema() -> None:
+    inspector = inspect(engine)
+    runtime_columns = {
+        "registrations": {
+            "contact_email": "ALTER TABLE registrations ADD COLUMN contact_email VARCHAR",
+        },
+        "announcements": {
+            "is_urgent": "ALTER TABLE announcements ADD COLUMN is_urgent BOOLEAN DEFAULT 0",
+        },
+    }
+
+    with engine.begin() as connection:
+        for table_name, columns in runtime_columns.items():
+            if not inspector.has_table(table_name):
+                continue
+            existing_columns = {column["name"] for column in inspector.get_columns(table_name)}
+            for column_name, ddl in columns.items():
+                if column_name not in existing_columns:
+                    connection.execute(text(ddl))
 
 
 def create_app() -> FastAPI:
@@ -30,6 +52,7 @@ def create_app() -> FastAPI:
 
     # Create DB tables
     Base.metadata.create_all(bind=engine)
+    ensure_runtime_schema()
 
     # Seed default admin if none exists
     with SessionLocal() as db:
@@ -93,6 +116,10 @@ def create_app() -> FastAPI:
     @app.get("/admin/students")
     async def admin_students_page(request: Request):
         return templates.TemplateResponse(request=request, name="admin_students.html")
+
+    @app.get("/admin/settings")
+    async def admin_settings_page(request: Request):
+        return templates.TemplateResponse(request=request, name="admin_settings.html")
 
     @app.exception_handler(StarletteHTTPException)
     async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):

@@ -6,6 +6,12 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from ..env_settings import is_valid_email, normalize_email
+from ..mail_service import (
+    send_waitlist_confirmation_email,
+    send_waitlist_promoted_email,
+    waitlist_mail_ready,
+)
 from ..utils import log_action
 from ..websocket_manager import manager
 import asyncio
@@ -80,6 +86,12 @@ def list_activities(db: Session = Depends(get_db)):
 
 @router.post("/register", response_model=schemas.MessageResponse)
 def register_student(payload: schemas.RegistrationCreate, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    normalized_email = normalize_email(payload.email)
+    if payload.email and not is_valid_email(payload.email):
+        return schemas.MessageResponse(
+            success=False, message="กรุณากรอกอีเมลให้ถูกต้อง", remaining_seats=None
+        )
+
     # 1. Find main student
     student = (
         db.query(models.Student)
@@ -156,6 +168,13 @@ def register_student(payload: schemas.RegistrationCreate, request: Request, back
     if registered_count + len(members) > activity.max_people:
          is_waitlisted = True
 
+    if is_waitlisted and not normalized_email:
+        return schemas.MessageResponse(
+            success=False,
+            message="กิจกรรมเต็มแล้ว กรุณากรอกอีเมลเพื่อรับการยืนยันการเข้าคิวสำรอง",
+            remaining_seats=None,
+        )
+
     # 5. Validation Loop for ALL members
     for member in members:
         # Duplicate registration
@@ -231,7 +250,13 @@ def register_student(payload: schemas.RegistrationCreate, request: Request, back
     current_status = "waitlisted" if is_waitlisted else "registered"
     
     for member in members:
-        reg = models.Registration(student_id=member.id, activity_id=activity.id, team_name=team_name_val, status=current_status)
+        reg = models.Registration(
+            student_id=member.id,
+            activity_id=activity.id,
+            team_name=team_name_val,
+            contact_email=normalized_email if is_waitlisted else None,
+            status=current_status,
+        )
         db.add(reg)
 
     db.commit()
@@ -254,8 +279,22 @@ def register_student(payload: schemas.RegistrationCreate, request: Request, back
             models.Registration.activity_id == activity.id,
             models.Registration.status == "waitlisted"
         ).count()
+        if normalized_email and waitlist_mail_ready():
+            background_tasks.add_task(
+                send_waitlist_confirmation_email,
+                normalized_email,
+                student.name,
+                activity.title,
+                q_count,
+                team_name_val,
+            )
         return schemas.MessageResponse(
-            success=True, message=f"จองคิวสำเร็จ (อยู่ในรายชื่อสำรองคิวที่ {q_count})", remaining_seats=0
+            success=True,
+            message=(
+                f"จองคิวสำเร็จ (อยู่ในรายชื่อสำรองคิวที่ {q_count})"
+                + (" ระบบกำลังส่งอีเมลยืนยันให้คุณ" if normalized_email and waitlist_mail_ready() else "")
+            ),
+            remaining_seats=0
         )
 
     return schemas.MessageResponse(
@@ -322,6 +361,14 @@ def cancel_registration(payload: schemas.CancelRequest, request: Request, backgr
         if next_in_line:
             next_in_line.status = "registered"
             db.commit()
+            if next_in_line.contact_email and waitlist_mail_ready():
+                background_tasks.add_task(
+                    send_waitlist_promoted_email,
+                    next_in_line.contact_email,
+                    next_in_line.student.name,
+                    activity.title,
+                    next_in_line.team_name,
+                )
             try:
                 log_action(db, "SYSTEM", "PROMOTE", f"Promoted student.id={next_in_line.student_id} to registered for '{activity.title}'", request)
             except:

@@ -62,6 +62,7 @@ class Registration(Base):
     student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
     activity_id = Column(Integer, ForeignKey("activities.id"), nullable=False)
     team_name = Column(String, nullable=True) # New field for Team Registration
+    contact_email = Column(String, nullable=True)
     status = Column(String, default="registered") # registered / waitlisted
     timestamp = Column(DateTime, default=datetime.now)
 

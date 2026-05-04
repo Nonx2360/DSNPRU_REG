@@ -1,810 +1,777 @@
-# DSNPRU_REG - School Activity Registration System
+# DSNPRU_REG
 
-**Version 3.3.0**
+DSNPRU_REG is a school activity registration system built with FastAPI, SQLAlchemy, Jinja2, Alpine.js, and SQLite. It supports student self-registration, waitlists, team activities, real-time admin updates, exports, announcements, and operational monitoring in a single deployable app.
 
-A comprehensive web-based activity registration system designed for schools. It allows students to view and register for activities, while providing administrators with powerful tools to manage activities, students, and registration data. Built with **FastAPI** for high performance, **WebSockets** for real-time updates, **Alpine.js** for interactivity, and a **custom CSS design system** with full dark mode support.
-
----
-
-## Table of Contents
+## Contents
 
 - [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Installation](#installation)
+- [Feature Summary](#feature-summary)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [How It Works](#how-it-works)
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
-- [Usage Guide](#usage-guide)
-- [API Reference](#api-reference)
+- [Waitlist Email Flow](#waitlist-email-flow)
+- [Admin Guide](#admin-guide)
+- [Student Guide](#student-guide)
+- [Routes](#routes)
 - [Database Schema](#database-schema)
+- [Exports](#exports)
+- [Runtime Schema Upgrades](#runtime-schema-upgrades)
+- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
-
----
+- [Security Notes](#security-notes)
+- [License](#license)
 
 ## Overview
 
-DSNPRU_REG solves the challenge of manual activity registration in schools:
+This project is designed for school events or club/activity selection where:
 
-- **Eliminates Paperwork**: Students register online, saving paper and reducing errors.
-- **Real-time Quota Management**: Prevents overbooking of activities automatically.
-- **Centralized Data**: All registration data is stored securely and is easily exportable.
-- **Comprehensive Logging**: Tracks every administrative action and student registration for full accountability.
-- **Role-Based Access**: Distinguishes between General Staff and Super Administrators for secure management.
-- **Team Activity Support**: Full support for team/partner-based activities with configurable team sizes.
+- students must be selected from a pre-imported school roster
+- activities can have quotas, group restrictions, classroom restrictions, and schedules
+- some activities are individual and some are team-based
+- over-capacity registrations should go to a waitlist instead of failing completely
+- admins need a web dashboard to manage students, activities, announcements, exports, and platform status
+- changes should appear in near real-time without a full page refresh
 
----
+The application is server-rendered with Jinja templates and enhanced on the client with Alpine.js and Axios. Data is stored in `sicday.db`.
 
-## Features
+## Feature Summary
 
-### Public / Student Interface
+### Student-facing
 
-The student-facing side is designed for ease of use and quick access to information:
+- activity browsing with current seat counts
+- live updates via WebSocket
+- student lookup by name or student number
+- self-registration for open activities
+- team registration with optional team name and partner lookup
+- waitlist support when an activity is full
+- email required for waitlist confirmation
+- waitlist confirmation email
+- promotion email when a waitlisted registration becomes registered
+- self-service registration lookup
+- self-service cancellation while the activity remains open
+- active announcements shown as banners
+- urgent announcements shown as modal popups
+- dark mode
 
-- **Activity Browser**: View all available activities with descriptions, remaining seats, and schedules.
-- **Real-time Status**: Clearly see which activities are Open or Closed, updated instantly via WebSocket.
-- **Activity Type Badges**: Visual indicators showing whether an activity is Individual (เดี่ยว) or Team/Partner (ทีม/คู่).
-- **Responsive Design**: Works perfectly on mobile phones, tablets, and desktop computers.
-- **Dark Mode**: Full dark mode support with automatic theme persistence via localStorage.
-- **System Announcements**: View important messages broadcast by administrators with color-coded banners, updated in real-time via WebSocket.
-- **Urgent Announcements**: Critical announcements appear as modal popups requiring user acknowledgement, with an optional "don't show again" checkbox.
-- **Student Context Display**: After entering student number, view registered activities and remaining group quotas.
-- **Partner Search Autocomplete**: Search for partners by name or student number with autocomplete dropdown.
-- **Registration Status**: Display whether registration is active or waitlisted.
+### Admin-facing
 
-### Team Registration System (V3 NEW)
+- JWT-based admin authentication
+- superuser and non-superuser roles
+- dashboard with totals and activity chart
+- mail settings page for waitlist email delivery
+- activity CRUD
+- activity open/close toggle
+- activity detail page with per-activity registrations
+- activity groups with quotas, visibility, and classroom restrictions
+- student import from Excel
+- student edit, delete, bulk delete, and bulk classroom update
+- announcement management
+- analytics page
+- platform status and metrics page
+- registration export to Excel and PDF
+- student export to Excel and PDF
+- audit log viewer
 
-A complete system for registering team-based or partner-based activities:
+### Operational behavior
 
-- **Activity Types**: Activities can be configured as "Individual" (เดี่ยว) or "Team" (ทีม/คู่).
-- **Configurable Team Size**: Admins can set maximum team members per activity (e.g., 2 for pairs, 5 for teams).
-- **Dynamic Partner Input**: Registration modal dynamically shows input boxes based on max team size.
-  - If max = 5, students see 4 partner input boxes (for members 2-5, since they are member 1).
-- **Partner Search**: Each partner slot has autocomplete search by name or student number.
-  - Excludes self and already-selected partners from results.
-  - Shows confirmation when a partner is selected (green highlight).
-  - Clear button (X) to remove a selected partner.
-- **Team Name**: Students can optionally name their team/group.
-- **Apply Alone Option**: Students can choose to register for a team activity as a solo participant.
-- **Validation**: Backend validates:
-  - Team size does not exceed maximum allowed.
-  - No duplicate partners.
-  - All partners exist in the system.
-  - Partners are not already registered for the activity.
-- **Member Summary**: Real-time display of how many team members are selected.
+- SQLite database auto-creation on first run
+- runtime schema patching for older databases
+- request logging
+- periodic system metric logging
+- WebSocket broadcasts for activity and announcement refreshes
 
-### Student Registration Cancellation (V3 NEW)
+## Tech Stack
 
-Students can now manage their own registrations:
+### Backend
 
-- **Cancel Button**: Each registered activity shows a trash icon button.
-- **Confirmation Dialog**: SweetAlert2 confirmation before cancellation.
-- **Ownership Validation**: Backend verifies the student owns the registration before allowing cancellation.
-- **Real-time Update**: After cancellation, the UI updates to reflect new quotas and available seats.
+- FastAPI
+- SQLAlchemy ORM
+- Pydantic
+- Uvicorn
+- SQLite
+- FastAPI-Mail
 
-### Admin Dashboard & Management
+### Frontend
 
-A comprehensive backend for school staff, accessed via a **hidden login portal**:
+- Jinja2 templates
+- Alpine.js
+- Axios
+- SweetAlert2
+- Chart.js
+- custom CSS in `frontend/static/css/custom.css`
 
-**Security & Access**
-- **Hidden Admin Link**: The admin login is discreetly located by clicking the **©** copyright symbol in the footer of the main page.
-- **Secure Authentication**: JWT-based login with access tokens.
-- **Password Management**: Admins can change their own passwords with validation of old password.
-- **Role-Based Access Control (RBAC)**:
-    - **Superuser**: Can manage other admins, view system logs, and access all administrative functions.
-    - **Staff**: Can manage activities, students, and groups but cannot create/delete admin accounts.
+### Export / file processing
 
-**Activity Management**
-- **CRUD Operations**: Create, Read, Update, and Delete activities with full control.
-- **Activity Types**: Choose between Individual and Team activities when creating.
-- **Max Team Size**: For team activities, set the maximum number of members allowed per team (1-10).
-- **Group Organization**: Organize activities into groups (e.g., "Sports", "Academic Clubs") with group-level quotas and visibility toggle.
-- **Classroom Restrictions**: Limit activities and groups to specific classrooms (e.g., "M.1/1 only").
-- **Time Scheduling**: Set automatic open and close times for registration.
-- **Color Coding**: Assign custom colors to activity cards for visual organization.
-- **Activity Detail Page**: View all registrations for an activity with the ability to manually remove students.
+- OpenPyXL
+- ReportLab
 
-**Student Management**
-- **Bulk Imports**: Import student lists via Excel files (formats: 5-column and 6-column with sequence number).
-- **Search & Filter**: Quickly find students by name or ID.
-- **Class Number Tracking**: Track both student ID (รหัส) and class sequence number (เลขที่) for accurate identification.
-- **Bulk Actions**: Delete multiple students in batch operations.
-- **Student Details**: View and edit student information including name, classroom, student ID, and sequence number.
-- **Manual Removal**: Remove students from specific activities via the Activity Details page.
+## Project Structure
 
-**Comprehensive Logging & Audit System**
-- **Action Tracking**: The system logs **ALL** critical actions, providing full audit trail:
-    - **Admin Actions**: Login, Logout, Change Password, Create/Delete Admin.
-    - **Activity Management**: Create, Update, Delete activities.
-    - **Student Management**: Import, Delete students.
-    - **Student Actions**: Student registrations and cancellations with timestamps.
-- **Request Logging**: All API requests are tracked with timestamp, method, path, status code, and response time.
-- **Log Viewer**: Superusers can view the complete event history in the admin logs, sorted by timestamp.
-- **IP Address Tracking**: Logs include client IP addresses for security monitoring.
-
-**System Announcements**
-- **Broadcast Messages**: Create and manage system-wide announcements visible on the public page.
-- **Color-Coded Alerts**: Assign colors to announcements for visual emphasis (Rose, Indigo, Emerald, Amber).
-- **Urgent Announcements**: Mark announcements as "urgent" to display as a modal popup instead of a banner bar.
-  - Users can check "ไม่แสดงอีก" (don't show again) to dismiss per-announcement.
-  - Admin edits/reactivation automatically resets dismissed state for all users.
-- **Activation Toggle**: Enable/disable announcements without deleting them.
-- **Real-time Updates**: Announcements are pushed to all connected clients instantly via WebSocket.
-- **Timestamp Tracking**: Each announcement records creation time, updated on every edit.
-
-**Data Export**
-- **Excel Export**: Comprehensive registration lists with activity, student name, classroom, student ID, and sequence number columns.
-- **PDF Export**: Professional registration reports with Thai font support and formatted tables.
-- **Filtered Exports**: Export all registrations or filter by specific activity.
-- **Team-Aware Formatting**: For team activities, exports properly display team names and member information.
-
----
-
-## Architecture
-
-### System Design
-
-The system follows a monolithic architecture with clear separation of concerns between the presentation, logic, and data layers.
-
-```mermaid
-graph TD
-    subgraph Clients["Frontend Clients"]
-        Student["User / Student<br>(Mobile/Desktop)"]
-        Admin["Administrator<br>(Dashboard)"]
-    end
-
-    subgraph Server["FastAPI Backend Server"]
-        direction TB
-        
-        subgraph Presentation["Presentation & Routing"]
-            Static["Static Files<br>(Custom CSS/JS/Images)"]
-            Templates["Jinja2 Templates<br>(HTML Rendering)"]
-            APIRouter["API Router"]
-        end
-
-        subgraph Realtime["Real-time Layer"]
-            WSManager["WebSocket Manager<br>(ConnectionManager)"]
-            WSEndpoint["WS Endpoint<br>(/ws/activities)"]
-        end
-
-        subgraph Logic["Business Logic Layer"]
-            AuthService["Auth Service<br>(OAuth2/JWT)"]
-            AdminLogic["Admin Logic<br>(Manage Activities/Users)"]
-            PublicLogic["Public Logic<br>(Registration/Quota)"]
-            ExportService["Export Service<br>(PDF/Excel Gen)"]
-            LogService["Logging Utility<br>(Centralized Event Tracking)"]
-        end
-
-        subgraph DataAccess["Data Access Layer"]
-            ORM["SQLAlchemy ORM"]
-            Schemas["Pydantic Schemas<br>(Validation)"]
-        end
-    end
-
-    subgraph Infrastructure["Infrastructure"]
-        SQLite[("SQLite Database<br>(sicday.db)")]
-        FileSystem["File System<br>(Logs/Exports)"]
-    end
-
-    %% Client Interactions
-    Student -->|HTTP GET/POST| APIRouter
-    Admin -->|HTTP GET/POST| APIRouter
-    Student -.->|WebSocket| WSEndpoint
-    Admin -.->|WebSocket| WSEndpoint
-    
-    %% WebSocket Flow
-    WSEndpoint --> WSManager
-    AdminLogic -->|broadcast| WSManager
-    PublicLogic -->|broadcast| WSManager
-
-    %% Internal Server Flow
-    APIRouter --> Templates
-    APIRouter --> Static
-    APIRouter --> AuthService
-    APIRouter --> AdminLogic
-    APIRouter --> PublicLogic
-    APIRouter --> ExportService
-
-    %% Logic to Data interactions
-    AdminLogic --> ORM
-    PublicLogic --> ORM
-    AuthService --> ORM
-    LogService --> ORM
-    
-    %% Data to Infrastructure
-    ORM --> SQLite
-    ExportService --> FileSystem
+```text
+DSNPRU_REG/
+├── backend/
+│   ├── auth.py
+│   ├── database.py
+│   ├── env_settings.py
+│   ├── mail_service.py
+│   ├── main.py
+│   ├── models.py
+│   ├── routers/
+│   │   ├── admin.py
+│   │   ├── export.py
+│   │   └── public.py
+│   ├── schemas.py
+│   ├── utils.py
+│   └── websocket_manager.py
+├── frontend/
+│   ├── static/
+│   │   ├── css/
+│   │   ├── fonts/
+│   │   ├── img/
+│   │   └── js/
+│   └── templates/
+├── tests/
+├── .env.example
+├── requirements.txt
+├── migrate_db.py
+├── migrate_sequence.py
+├── migrate_v3.py
+└── sicday.db
 ```
 
-### Data Flow Breakdown
+## How It Works
 
-1.  **Request Handling**:
-    - **FastAPI (Uvicorn)** receives HTTP requests.
-    - **Middleware** handles CORS and Logging.
-    - **Router** directs traffic to `public` (students), `admin` (management), or `export` endpoints.
+### Registration flow
 
-2.  **Processing**:
-    - **Dependencies** inject database sessions and current user details (via JWT).
-    - **Business Logic** verifies quotas, checks classroom restrictions, validates team sizes, and validates input via **Pydantic**.
-    - **Logging Utility** (`utils.py`) intercepts critical actions and writes them to the `admin_logs` table.
+1. A student searches for themselves from the imported roster.
+2. The frontend submits `/api/register` with:
+   - student identity
+   - activity ID
+   - optional team name
+   - optional partner numbers
+   - optional email
+3. The backend validates:
+   - activity is open
+   - schedule window is valid
+   - classroom restrictions
+   - group quota rules
+   - duplicate registration
+   - team size and partner existence
+4. If seats remain, the registration is stored with `status="registered"`.
+5. If the activity is full, the registration is stored with `status="waitlisted"`, and an email is required.
+6. When configured, the system sends:
+   - a waitlist confirmation email immediately
+   - a second email if that waitlisted record is later promoted to `registered`
 
-3.  **Real-time Updates**:
-    - **WebSocket Manager** maintains a pool of active client connections.
-    - When activities or announcements change, the backend broadcasts events (`update_activities`, `update_announcements`) to all connected clients.
-    - Clients automatically re-fetch data on receiving a broadcast, ensuring all users see changes instantly.
-    - Auto-reconnect with 3-second backoff on disconnection.
+### Waitlist promotion flow
 
-4.  **Persistence**:
-    - **SQLAlchemy** translates Python objects to SQL queries.
-    - **SQLite** stores persistent data in `sicday.db`, ensuring ACID compliance for transactions (like registration claiming).
+Promotion currently happens in two places:
 
-5.  **Presentation**:
-    - **Jinja2** renders HTML templates on the server side, injecting dynamic data (e.g., list of activities).
-    - **Alpine.js** on the client side handles interactivity (validations, modals, async fetch requests) without full page reloads.
-    - **Custom CSS Design System** with CSS custom properties (tokens), BEM naming, and full dark mode support.
+- when a student cancels their own registration
+- when an admin removes a registered student from an activity
 
-### Technology Stack
+In both cases the oldest `waitlisted` record for that activity is promoted automatically. If the promoted record has a stored `contact_email` and SMTP is configured, the app sends a seat-granted email.
 
-**Backend**
-- **FastAPI**: Modern, fast (high-performance) web framework for building APIs with Python.
-- **SQLAlchemy**: The Python SQL Toolkit and Object Relational Mapper.
-- **Pydantic**: Data validation using Python type hints.
-- **Uvicorn**: ASGI web server implementation.
+### Real-time updates
 
-**Frontend**
-- **HTML5 & Jinja2 Templates**: Server-side rendering for SEO and speed.
-- **Custom CSS Design System**: Token-based CSS with BEM naming, full dark mode, and responsive layouts.
-- **Alpine.js**: Lightweight JavaScript framework for adding interactivity.
-- **SweetAlert2 & Toastify**: For beautiful, responsive alerts and notifications.
-- **Chart.js**: For data visualization on the dashboard.
-- **Heroicons (SVG)**: Inline SVG icons for consistent, scalable UI elements.
+The app uses a WebSocket endpoint at `/ws/activities`. The backend broadcasts:
 
-**Real-time**
-- **WebSocket (native)**: Push-based updates for activities and announcements via `/ws/activities`.
+- `update_activities`
+- `update_announcements`
 
-**Data & Export**
-- **SQLite**: Lightweight, serverless database engine.
-- **Pandas / OpenPyXL**: For efficient Excel data processing and export.
-- **ReportLab (FPDF2)**: For generating PDF reports with Thai font support.
+The public page and admin dashboard reconnect automatically and reload their data when those messages are received.
 
----
-
-## Installation
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.9 or higher
-- pip (Python package manager)
+- Python 3.10+ recommended
+- pip
 
-### Step 1: Clone the Repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Nonx2360/DSNPRU_REG.git
 cd DSNPRU_REG
 ```
 
-### Step 2: Virtual Environment
-
-It is recommended to use a virtual environment to manage dependencies.
+### 2. Create and activate a virtual environment
 
 ```bash
-# Windows
+# Windows PowerShell
 python -m venv venv
-.\venv\Scripts\activate
+.\venv\Scripts\Activate.ps1
 
 # macOS / Linux
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Step 3: Install Dependencies
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Database Setup
-
-The system automatically creates all necessary database tables on first run. No manual migrations are required for fresh installations.
-
-If upgrading from a version prior to V3.0, you may need to run migration scripts to update existing database schemas:
-
-```bash
-# For adding team activity support (V3.0+)
-python migrate_db.py
-
-# For adding sequence number field (V3.1.5+)
-python migrate_sequence.py
-```
-
-These scripts will safely add new columns without affecting existing data.
-
-### Step 5: Run the Server
+### 4. Start the app
 
 ```bash
 uvicorn backend.main:app --reload
 ```
 
-The application will be available at:
-- **Public**: `http://localhost:8000/`
-- **Admin**: Click the **©** symbol in the footer or visit `http://localhost:8000/admin/login`
-- **API Docs**: `http://localhost:8000/docs`
+### 5. Open the app
 
----
+- Public home page: `http://127.0.0.1:8000/`
+- Admin login: `http://127.0.0.1:8000/admin/login`
+- API docs: `http://127.0.0.1:8000/docs`
 
 ## Configuration
 
-The system is designed for zero-configuration startup with sensible defaults.
+The app can run with no environment variables for basic local usage.
 
-**Default Admin Credentials:**
-On the first run, if no admin exists, the system automatically creates:
-- **Username**: `admin`
-- **Password**: `admin123`
+### Default admin account
 
-**⚠️ SECURITY WARNING**: Change this password immediately after your first login using the "Change Password" feature in the admin dashboard.
+If the `admins` table is empty, the app seeds:
 
-**Database:**
-The system uses `sicday.db` (SQLite) created automatically in the root directory. Ensure write permissions for the application.
+- username: `admin`
+- password: `admin123`
 
-**Environment Setup:**
-No environment variables are required for basic operation. The system can run standalone after dependency installation.
+Change this immediately after first login.
 
----
+### Database
 
-## Usage Guide
+- default database file: `sicday.db`
+- engine: SQLite via SQLAlchemy
+- file is created automatically if it does not exist
 
-### For Administrators
+### Mail configuration
 
-1.  **Initial Login**:
-    - Use default credentials (Username: `admin`, Password: `admin123`).
-    - Click the hidden **©** copyright symbol in the footer of the main page.
-    - Immediately change your password in the admin dashboard.
+Waitlist emails use SMTP settings stored in the project root `.env` file. You can either:
 
-2.  **Dashboard Overview**:
-    - View summary statistics after login.
-    - Use the sidebar to navigate between different admin functions.
+- create `.env` manually
+- or configure values from the admin mail settings page at `/admin/settings`
 
-3.  **Manage Admin Accounts** (Superuser Only):
-    - Go to "Admin Settings" or use the admin API.
-    - Create new admin accounts with username and password.
-    - Set superuser privileges for trusted administrators.
-    - Delete admin accounts (cannot delete own account).
-    - Change your own password anytime.
+Use this format:
 
-4.  **Manage Students**:
-    - Go to "Student Management".
-    - **Import Excel File**:
-      - Click "Import (Excel)" to upload student list.
-      - **Supported Formats**:
-        - **New Format (6 columns)**: `รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
-        - **Legacy Format (5 columns)**: `รหัส`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
-      - System automatically detects and handles both formats.
-    - **Manage Individual Students**: Search, view details, edit, or delete students.
-    - **Bulk Operations**: Delete multiple students at once.
+```env
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_FROM=your-email@gmail.com
+MAIL_PORT=587
+MAIL_SERVER=smtp.gmail.com
+MAIL_FROM_NAME=DSNPRU Waitlist
+```
 
-5.  **Create and Manage Activities**:
-    - Go to "Manage Activities".
-    - **Create New Activity**:
-      - Set title, description, and maximum quota.
-      - **Select Activity Type**:
-        - **Individual**: Single student registration.
-        - **Team**: Multiple students per registration with configurable team size.
-      - For team activities, set "Max Team Size" (2-10 members).
-      - Set start/end times for automatic registration control.
-      - Assign classroom restrictions if needed.
-      - Choose a color for visual organization.
-    - **Edit Activities**: Modify activity details anytime.
-    - **Activity Groups**: Use "Group Manager" to create logical groups of activities with quotas.
-    - **View Activity Details**: Click an activity to see all registrations and student details.
+The app also ships with [.env.example](.env.example).
 
-6.  **Manage Registrations**:
-    - Navigate to Activity Details page.
-    - **View Registrations**: See all students registered for an activity.
-    - **Remove Students**: Click the trash icon next to a student to remove their registration (action is logged).
-    - **Team Information**: For team activities, view team names and all team members.
+### Gmail note
 
-7.  **Broadcast Announcements**:
-    - Create system-wide announcements visible on the public page.
-    - Set color for visual emphasis (Rose, Indigo, Emerald, Amber).
-    - **Mark as Urgent**: Toggle "ประกาศด่วน" to show announcement as a popup instead of a banner.
-    - Activate/deactivate announcements without deletion.
-    - All changes push to clients in real-time via WebSocket.
+If you use Gmail, use an App Password, not your normal mailbox password.
 
-8.  **Export Data**:
-    - Go to "Export".
-    - **Choose Data**: Export all registrations or a specific activity.
-    - **Choose Format**:
-      - **Excel**: Detailed spreadsheet with columns: Activity, Student Name, Classroom, Student ID, Sequence Number.
-      - **PDF**: Professional formatted report with Thai font support.
-    - Both formats include team name information for team activities.
+## Waitlist Email Flow
 
-9.  **View Audit Logs** (Superuser Only):
-    - Go to "Logs" section.
-    - Review all admin actions with timestamps, IP addresses, and details.
-    - Track all system activities for security and accountability.
-    - Filter by admin, action type, or date range.
+### When a user joins the waitlist
 
-### For Students
+If an activity is full:
 
-1.  **Visit the Home Page**:
-    - Open the main registration page in your browser.
-    - Check for any system announcements at the top of the page.
+- the registration is stored as `waitlisted`
+- the frontend requires an email
+- the backend stores that email in `registrations.contact_email`
+- the app sends a waitlist confirmation email if mail settings are complete
 
-2.  **Identify Yourself**:
-    - Enter your student ID number (รหัส) or full name in the search box.
-    - Click to select your name from the autocomplete suggestions.
-    - The system will load your registered activities and group quotas.
+### When a user gets a seat
 
-3.  **View Available Activities**:
-    - Browse the complete list of open activities.
-    - Look for **Activity Type Badges**:
-      - **เดี่ยว (Individual)**: Single student registration.
-      - **ทีม/คู่ (Team)**: Team-based registration with multiple members.
-    - Check remaining seats before registering.
+If a registered student leaves an activity and a waitlisted student is promoted:
 
-4.  **Register for an Individual Activity**:
-    - Click the "Register" button on the activity card.
-    - Confirm your choice in the dialog.
-    - Your registration is complete and appears in your registered activities list.
+- the promoted registration changes from `waitlisted` to `registered`
+- the app sends a promotion email if that registration has `contact_email`
 
-5.  **Register for a Team Activity**:
-    - Click the "Register" button on a team activity card.
-    - A registration modal appears showing:
-      - Maximum team size allowed.
-      - Partner input fields based on team size.
-      - Team name field (optional).
-    - **Option A - Register with Team**:
-      - Enter team name (optional).
-      - Search and select partners using the autocomplete inputs (minimum 2 characters).
-      - Partners are matched by name or student ID.
-      - Only students NOT already registered for this activity appear in suggestions.
-      - Click the check or select partner name to confirm.
-      - Submit to register entire team at once.
-    - **Option B - Register Alone**:
-      - Check "Apply Alone" option.
-      - Submit to register as solo participant.
+### Where mail settings are managed
 
-6.  **View Your Registrations**:
-    - After identification, see all your registered activities.
-    - View:
-      - Activity names and details.
-      - Team names (if applicable).
-      - Registration status.
-    - Check remaining group quotas to see how many more activities you can join.
+Admins can open `/admin/settings` to:
 
-7.  **Cancel a Registration**:
-    - Click the trash/delete icon next to a registered activity.
-    - Confirm the cancellation in the dialog.
-    - The registration is immediately removed.
-    - Seats are freed for other students.
-    - Remaining quotas update in real-time.
+- set SMTP username, password, sender, port, and server
+- view whether a password is already stored
+- preview the `.env` format
+- save changes directly to `.env`
 
----
+No restart is required after saving mail settings through the admin UI because the running process updates its environment values immediately.
 
-## API Reference
+## Admin Guide
 
-The API is fully documented with Swagger UI at `/docs`. Key endpoints include:
+### Main admin pages
 
-### Authentication
-- `POST /admin/login`: Login with username and password, retrieve JWT token.
-- `POST /admin/logout`: Logout and log the event (requires authentication).
-- `PUT /admin/change-password`: Change password with validation of old password (requires authentication).
+- `/admin/login`
+- `/admin/dashboard`
+- `/admin/activities`
+- `/admin/activity/{activity_id}`
+- `/admin/students`
+- `/admin/announcements`
+- `/admin/analytics`
+- `/admin/platform/status`
+- `/admin/export`
+- `/admin/users`
+- `/admin/logs`
+- `/admin/settings`
 
-### Admin Management (Superuser Only)
-- `GET /admin/api/admins`: List all admin accounts.
-- `POST /admin/api/admins`: Create a new admin account with username and password.
-- `DELETE /admin/api/admins/{admin_id}`: Delete an admin account (cannot delete own account).
+### Typical admin workflow
 
-### Activity Management
-- `GET /admin/api/activities`: List all activities with registration counts and remaining seats.
-- `POST /admin/create_activity`: Create a new activity (accepts `type`, `max_team_size`, schedules, and restrictions).
-- `PUT /admin/activities/{id}`: Update an activity properties.
-- `DELETE /admin/activities/{id}`: Delete an activity.
-- `GET /admin/api/activity-detail/{id}`: Get detailed activity information with all registrations.
+1. Log in.
+2. Import students from Excel.
+3. Create activity groups if needed.
+4. Create activities and set quotas, type, schedule, and restrictions.
+5. Monitor registrations from the dashboard and activity detail pages.
+6. Use announcements for public messaging.
+7. Configure mail settings if you want waitlist email delivery.
+8. Export registrations or student lists when needed.
 
-### Activity Groups
-- `GET /admin/api/activity_groups`: List all activity groups.
-- `POST /admin/api/activity_groups`: Create a new activity group with quota and classroom restrictions.
-- `PUT /admin/api/activity_groups/{group_id}`: Update activity group.
-- `DELETE /admin/api/activity_groups/{group_id}`: Delete activity group.
+### Student import format
 
-### Student Management
-- `GET /admin/api/students`: List all students.
-- `POST /admin/api/students/import`: Bulk import students from Excel file (supports 5 and 6-column formats).
-- `DELETE /admin/api/students/{id}`: Remove a student.
-- `GET /admin/api/students/{id}`: Get student details.
+The current import endpoint accepts `.xlsx` and `.xls` filenames and expects rows similar to:
 
-### Logs & Monitoring
-- `GET /admin/api/logs`: View system event logs (Superuser only) - includes all admin actions and timestamps.
+- `รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
+
+Rows are normalized into:
+
+- `number`
+- `name`
+- `classroom`
+- `sequence`
+
+Existing students are updated by `number`.
+
+### Activity behavior
+
+Each activity supports:
+
+- `title`
+- `description`
+- `max_people`
+- `status` (`open` or `close`)
+- `allowed_classrooms`
+- `start_time`
+- `end_time`
+- `color`
+- `group_id`
+- `type` (`individual` or `team`)
+- `max_team_size`
+
+### Activity groups
+
+Groups support:
+
+- group name
+- quota per student
+- allowed classrooms
+- visibility toggle
+
+Public activity listing only shows activities that are:
+
+- `status == "open"`
+- in a visible group, or ungrouped
 
 ### Announcements
-- `GET /admin/api/announcements`: List all announcements (requires auth).
-- `POST /admin/api/announcements`: Create a system announcement (accepts `message`, `is_active`, `is_urgent`, `color`).
-- `PUT /admin/api/announcements/{ann_id}`: Update an announcement (timestamp refreshes automatically).
-- `DELETE /admin/api/announcements/{ann_id}`: Delete an announcement.
-- `GET /api/announcements/active`: Get active announcements visible on public page.
+
+Announcements support:
+
+- message text
+- active / inactive status
+- urgent / non-urgent mode
+- color choice
+
+Behavior:
+
+- non-urgent announcements show as top banners
+- urgent announcements show as SweetAlert modals
+- announcement changes are broadcast in real time
+
+### Platform monitoring
+
+The admin platform endpoints expose:
+
+- API health
+- DB health
+- DB file size
+- uptime percentage approximation
+- request counts
+- average response time
+- error rate
+- grouped trends over time
+
+## Student Guide
+
+### Registering
+
+1. Open the home page.
+2. Search for your name or student number.
+3. Select an activity.
+4. If it is a team activity, optionally:
+   - give the team a name
+   - add partner students
+   - choose to apply alone
+5. If the activity is full, enter an email for waitlist confirmation.
+6. Submit the registration.
+
+### Checking registrations
+
+Use the "ตรวจสอบข้อมูล / ยกเลิก" tab on the home page and enter the student number to load current registrations.
+
+### Canceling
+
+Students can cancel their own registration while the activity is still open. If they cancel a registered seat, the next waitlisted student is promoted automatically.
+
+## Routes
+
+### Page routes
+
+#### Public pages
+
+- `GET /`
+- `GET /activities`
+- `GET /about`
+
+#### Admin pages
+
+- `GET /admin/login`
+- `GET /admin/dashboard`
+- `GET /admin/activities`
+- `GET /admin/activity/{activity_id}`
+- `GET /admin/export`
+- `GET /admin/students`
+- `GET /admin/settings`
+- `GET /admin/logs`
+- `GET /admin/users`
+- `GET /admin/analytics`
+- `GET /admin/announcements`
+- `GET /admin/platform/status`
+
+### Public API
+
+- `GET /api/search_students`
+- `GET /api/announcements/active`
+- `GET /api/activities`
+- `POST /api/register`
+- `GET /api/my_registrations`
+- `POST /api/cancel_registration`
+- `GET /api/system_info`
+
+#### `POST /api/register` request body
+
+```json
+{
+  "name": "Student Name",
+  "classroom": "ม.6/1",
+  "number": "64001",
+  "activity_id": 1,
+  "email": "student@example.com",
+  "team_name": "Alpha Team",
+  "partner_numbers": ["64002", "64003"]
+}
+```
+
+Notes:
+
+- `email` is optional for normal registrations
+- `email` is required when the selected activity is full and the registration will be waitlisted
+- `partner_numbers` is used only for team activities
+
+### Admin API
+
+#### Authentication
+
+- `POST /admin/login`
+- `POST /admin/logout`
+- `PUT /admin/change-password`
+
+#### Dashboard and settings
+
+- `GET /admin/api/dashboard`
+- `GET /admin/api/settings/mail`
+- `PUT /admin/api/settings/mail`
+
+#### Admin user management
+
+- `GET /admin/api/admins`
+- `POST /admin/api/admins`
+- `DELETE /admin/api/admins/{admin_id}`
+
+#### Activity groups
+
+- `POST /admin/api/activity_groups`
+- `GET /admin/api/activity_groups`
+- `PUT /admin/api/activity_groups/{group_id}`
+- `DELETE /admin/api/activity_groups/{group_id}`
+
+#### Activities and registrations
+
+- `POST /admin/create_activity`
+- `GET /admin/api/activities`
+- `PUT /admin/activities/{activity_id}`
+- `POST /admin/activities/{activity_id}/toggle`
+- `DELETE /admin/activities/{activity_id}`
+- `GET /admin/registrations/{activity_id}`
+- `DELETE /admin/registrations/{reg_id}`
+- `GET /admin/search_students`
+
+#### Students
+
+- `POST /admin/api/import_students`
+- `GET /admin/api/students`
+- `PUT /admin/api/students/{student_id}`
+- `DELETE /admin/api/students/{student_id}`
+- `POST /admin/api/students/bulk-delete`
+- `POST /admin/api/students/bulk-update-class`
+- `GET /admin/api/classrooms`
+
+#### Announcements
+
+- `GET /admin/api/announcements`
+- `POST /admin/api/announcements`
+- `PUT /admin/api/announcements/{ann_id}`
+- `DELETE /admin/api/announcements/{ann_id}`
+
+#### Logs and analytics
+
+- `GET /admin/api/logs`
+- `GET /admin/api/analytics`
+- `GET /admin/api/platform/status`
+- `GET /admin/api/platform/metrics`
+- `GET /admin/api/platform/export`
+
+### Export API
+
+- `GET /export/excel`
+- `GET /export/pdf`
+- `GET /export/students/excel`
+- `GET /export/students/pdf`
+
+`/export/excel` and `/export/pdf` accept optional `activity_id`.
 
 ### WebSocket
-- `WS /ws/activities`: Real-time event stream. Broadcasts `update_activities` and `update_announcements` events.
 
-### Public (Student) Endpoints
-- `GET /api/activities`: List all open activities with `type`, `max_team_size`, remaining seats, and group information.
-- `GET /api/search_students?q={query}`: Search students by name or number (minimum 2 characters).
-- `GET /api/student_context/{student_number}`: Get student's registered activities, team names, and remaining group quotas.
-- `POST /api/register`: Register for an activity.
-  - **Body**: `{ name, classroom, number, activity_id, team_name: "Team Name", partner_numbers: ["12345", "12346"] }`
-- `DELETE /api/registrations/{id}?student_number={number}`: Cancel a registration (student must own it).
+- `WS /ws/activities`
 
-### Export Endpoints
-- `GET /export/pdf?activity_id={id}`: Export registrations as a formatted PDF report.
-- `GET /export/excel?activity_id={id}`: Export registrations as an Excel spreadsheet.
-- Both endpoints support filtering by activity or exporting all registrations.
+Broadcast messages used by the frontend:
 
----
+- `update_activities`
+- `update_announcements`
 
 ## Database Schema
 
-### Core Tables
+### `students`
 
-**students**
-- `id`: Integer, Primary Key
-- `name`: String, Student Name
-- `number`: String, Student ID Number (e.g., 64001)
-- `classroom`: String, Class (e.g., M.6/1)
-- `sequence`: Integer, Class sequence number (e.g., 1) - for distinguishing class number from student ID
+- `id` integer primary key
+- `number` unique student number
+- `name` student full name
+- `classroom` optional classroom string
+- `sequence` optional classroom sequence number
 
-**activities**
-- `id`: Integer, Primary Key
-- `title`: String, Activity Name
-- `description`: String, Activity Description
-- `max_people`: Integer, Quota per activity
-- `status`: String ('open'/'close')
-- `type`: String ('individual'/'team')
-- `max_team_size`: Integer, Max members per team (default 1)
-- `start_time` / `end_time`: DateTime, Automatic open/close times
-- `color`: String, Hex color code for UI display
-- `allowed_classrooms`: String, Comma-separated classroom restrictions
-- `group_id`: Foreign Key linked to `activity_groups`
+### `activity_groups`
 
-**activity_groups**
-- `id`: Integer, Primary Key
-- `name`: String, Group name (e.g., "Sports")
-- `quota`: Integer, Max selections allowed from this group per student
-- `allowed_classrooms`: String, Comma-separated classroom restrictions
-- `is_visible`: Boolean, Whether group is visible in student interface
+- `id` integer primary key
+- `name` unique group name
+- `quota` maximum selections per student within the group
+- `allowed_classrooms` comma-separated classroom restriction string
+- `is_visible` visibility toggle for public listing
 
-**registrations**
-- `id`: Integer, Primary Key
-- `student_id`: FK to `students`
-- `activity_id`: FK to `activities`
-- `team_name`: String, Team/group name for team activities
-- `status`: String ('registered'/'waitlisted') - registration status
-- `timestamp`: DateTime, Registration time
+### `activities`
 
-**admins**
-- `id`: Integer, Primary Key
-- `username`: String, Unique admin username
-- `password_hash`: String, Bcrypt-hashed password
-- `is_superuser`: Boolean, Superuser privileges flag
+- `id` integer primary key
+- `title`
+- `description`
+- `max_people`
+- `status`
+- `allowed_classrooms`
+- `start_time`
+- `end_time`
+- `color`
+- `type`
+- `max_team_size`
+- `group_id`
 
-**admin_logs**
-- `id`: Integer, Primary Key
-- `admin_username`: String, Admin who performed action
-- `action`: String, Action type (e.g., LOGIN, CREATE_ACTIVITY, DELETE_STUDENT)
-- `details`: String, Contextual information about the action
-- `ip_address`: String, Client IP address
-- `timestamp`: DateTime, Action timestamp
+### `registrations`
 
-**announcements**
-- `id`: Integer, Primary Key
-- `message`: String, Announcement message content
-- `is_active`: Boolean, Whether announcement is visible
-- `is_urgent`: Boolean, Whether announcement shows as popup (default false)
-- `color`: String, Color code for visual emphasis (rose, indigo, emerald, amber)
-- `timestamp`: DateTime, Creation/update timestamp (refreshed on every edit)
+- `id` integer primary key
+- `student_id` foreign key to `students`
+- `activity_id` foreign key to `activities`
+- `team_name` optional team name
+- `contact_email` optional waitlist email
+- `status` registration state: `registered` or `waitlisted`
+- `timestamp`
 
-**request_logs**
-- `id`: Integer, Primary Key
-- `timestamp`: DateTime, Request timestamp
-- `method`: String, HTTP method (GET, POST, PUT, DELETE, etc.)
-- `path`: String, API endpoint path
-- `status_code`: Integer, HTTP response status code
-- `response_time_ms`: Integer, Response time in milliseconds
+Constraint:
 
-**system_metrics**
-- `id`: Integer, Primary Key
-- `timestamp`: DateTime, Metric timestamp
-- `metric_type`: String, Type of metric (e.g., "db_size", "db_health", "api_health")
-- `value`: Integer, Numeric metric value (e.g., size in bytes)
-- `status`: String, Text status (e.g., "up", "down")
+- unique `(student_id, activity_id)`
 
----
+### `admins`
 
-## Version History
+- `id`
+- `username`
+- `password_hash`
+- `is_superuser`
 
-### V3.3.0 (Current)
+### `admin_logs`
 
-**Real-time WebSocket Architecture**
-- **WebSocket Manager**: Centralized connection pool with auto-reconnect for all clients.
-- **Live Activity Updates**: Registration/cancellation changes push instantly to all connected browsers.
-- **Live Announcement Updates**: Announcement create/edit/delete pushes to all clients in real-time.
-- **Event-Driven**: Backend broadcasts `update_activities` and `update_announcements` events.
+- `id`
+- `admin_username`
+- `action`
+- `details`
+- `ip_address`
+- `timestamp`
 
-**Urgent Announcements**
-- **Popup Mode**: Mark announcements as urgent to display as a SweetAlert modal popup instead of a top banner.
-- **User Dismissal**: "ไม่แสดงอีก" checkbox lets users dismiss a specific announcement.
-- **Auto-Reset on Edit**: Admin edits/reactivation automatically resets dismissed state (timestamp-based key).
-- **Separation of Concerns**: Non-urgent = banner bar only. Urgent = popup only.
+### `announcements`
 
-**Custom CSS Design System**
-- **Replaced Tailwind CSS**: Migrated to a custom CSS design system with CSS custom properties (tokens) and BEM naming.
-- **Full Dark Mode**: Comprehensive dark mode with proper contrast, toggled via navbar with theme persistence.
-- **SVG Icons**: Replaced all emojis with inline Heroicons SVGs for consistent rendering across platforms.
+- `id`
+- `message`
+- `is_active`
+- `is_urgent`
+- `color`
+- `timestamp`
 
-**Platform Status & Analytics Dashboard**
-- **Real-time Admin Dashboards**: Analytics and platform status pages use WebSocket for live updates.
-- **System Health Monitoring**: API health, DB health, uptime, error rates, and response times.
-- **Request Logging**: All API requests tracked with method, path, status code, and response time.
+### `request_logs`
 
-### V3.2.0
+- `id`
+- `timestamp`
+- `method`
+- `path`
+- `status_code`
+- `response_time_ms`
 
-**System Monitoring & Analytics**
-- **Request Logging**: All API requests are tracked with method, path, status code, and response time.
-- **System Metrics**: Track database and API health metrics with timestamped records.
-- **Performance Insights**: Monitor response times to identify and optimize bottlenecks.
+### `system_metrics`
 
-**System Announcements**
-- **Broadcast Messages**: Create and manage system-wide announcements visible on the public page.
-- **Color-Coded Alerts**: Assign colors to announcements for visual emphasis.
-- **Activation Control**: Enable/disable announcements without deletion.
+- `id`
+- `timestamp`
+- `metric_type`
+- `value`
+- `status`
 
-**Admin Management**
-- **Admin Account Management**: Superusers can now create and delete admin accounts via API.
-- **Password Management**: All admins can change their own passwords with validation.
-- **Improved Access Control**: Clear superuser/staff role separation.
+## Exports
 
-**Enhanced Database Schema**
-- **Registration Status**: Registrations now track status (registered/waitlisted) for future waitlist features.
-- **Sequence Tracking**: Student sequence number field for class-based identification.
-- **Event Tracking**: Dedicated admin_logs table with IP address tracking.
+### Registration exports
 
-### V3.1.5
+Routes:
 
-**New Student Identification System**
-- **Sequence Number (เลขที่)**: Added a dedicated field to distinguish between Student ID (รหัส) and Class Number (เลขที่).
-- **New Excel Import Format**: Supports a 6-column format (`รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`).
-- **Enhanced Exports**: Registration lists (Excel/PDF) include the sequence number column.
-- **Improved Student Management**: Admins can view and edit the sequence number field in the dashboard.
+- `/export/excel`
+- `/export/pdf`
 
-### V3.0
+Behavior:
 
-**Team Registration System**
-- **Activity Types**: Activities can be configured as "Individual" or "Team/Partner".
-- **Max Team Size**: Configurable maximum team members per activity (1-10 members).
-- **Dynamic Partner Selection**: Registration modal shows partner input boxes based on max team size.
-- **Partner Autocomplete Search**: Search for partners by name or student number.
-- **Team Name**: Optional naming of teams/groups during registration.
-- **Apply Alone**: Option to register for team activities as solo participants.
-- **Partner Validation**: Backend validates team sizes, prevents duplicates, and verifies partner existence.
+- optional filtering by `activity_id`
+- team activities include `team_name`
+- records are sorted for easier reading
 
-**Student Registration Cancellation**
-- **Self-Service Cancellation**: Students can cancel their own registrations from the UI.
-- **Ownership Validation**: Backend verifies student ownership before allowing deletion.
-- **Confirmation Dialog**: SweetAlert2 confirmation before cancellation.
-- **Real-time Updates**: UI updates immediately after cancellation.
+### Student exports
 
-**Enhanced Exports**
-- **Team Name Column**: Excel exports include the team name column.
-- **Team-Grouped PDF**: PDF exports for team activities sort registrations by team name.
+Routes:
 
-### V2.5
-- **Analytics Dashboard**: Visual charts for registration trends, group popularity, and classroom participation.
-- **Real-time Synchronization**: Background polling for student registration and admin analytics.
-- **SweetAlert2 Integration**: Professional confirmation dialogs for destructive actions.
-- **Theme Polish**: Improved UI visibility in Dark Mode.
+- `/export/students/excel`
+- `/export/students/pdf`
 
-### V2.0
-- **RBAC**: Role-Based Access Control (Admin vs Staff).
-- **Audit Logs**: Comprehensive logging for administrative actions.
-- **Enhanced Security**: JWT-based authentication and secure password hashing.
+Behavior:
 
----
+- exports all students ordered by classroom and sequence
+- PDF export uses the bundled ChakraPetch font when available
+
+## Runtime Schema Upgrades
+
+The app does more than `Base.metadata.create_all(...)`.
+
+At startup it also checks older databases and patches missing columns when needed. Current runtime fixes include:
+
+- `registrations.contact_email`
+- `announcements.is_urgent`
+
+This is handled in [backend/main.py](backend/main.py).
+
+Legacy migration scripts still exist for older installs:
+
+- `migrate_db.py`
+- `migrate_sequence.py`
+- `migrate_v3.py`
+- `add_col.py`
+
+For a fresh install, you normally do not need them.
+
+## Testing
+
+The repository includes HTTP-level tests in `tests/`, including:
+
+- authentication and security checks
+- admin RBAC checks
+- public functionality checks
+- not-found and auth behavior
+
+Typical usage depends on your local server setup. The tests use environment variables such as:
+
+- `BASE_URL`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+
+If you want to run the live-server tests:
+
+```bash
+uvicorn backend.main:app --reload
+```
+
+Then in another terminal:
+
+```bash
+pytest
+```
 
 ## Troubleshooting
 
-### Admin Login Issues
+### `no such column` SQLite errors
 
-**Problem**: "Login Failed" message even with correct credentials.
-- **Solution 1**: Verify default admin account exists. If not, delete `sicday.db` and restart the server to recreate it.
-- **Solution 2**: Check that you're using the correct username and password (default: `admin` / `admin123`).
-- **Solution 3**: Ensure your JWT token hasn't expired - try clearing browser cookies and login again.
+If you pull new code over an old database and see errors like:
 
-**Problem**: Can't access admin panel.
-- **Solution**: Make sure you clicked the hidden **©** copyright symbol in the footer, or visit `http://localhost:8000/admin/login` directly.
+- `no such column: announcements.is_urgent`
+- `no such column: registrations.contact_email`
 
-### Database Issues
+restart the app once so the runtime schema patcher in `backend/main.py` can run. If the DB is heavily customized, back it up before retrying.
 
-**Problem**: "Database is locked" error.
-- **Cause**: SQLite has limited concurrent write support.
-- **Solution**: Ensure no other process has the database open (check file explorer, SQLite browser tools, etc.). Restart the application.
+### Waitlist emails are not sending
 
-**Problem**: Database migrations fail.
-- **Solution 1**: Backup your `sicday.db` file.
-- **Solution 2**: Delete `sicday.db` and restart the server to create a fresh database.
-- **Solution 3**: If upgrading, ensure you run all migration scripts in order: `migrate_db.py`, then `migrate_sequence.py`.
+Check:
 
-### Activity Registration Issues
+1. mail settings are saved in `.env`
+2. all required mail fields are populated
+3. the promoted or waitlisted registration has `contact_email`
+4. your SMTP credentials are valid
+5. Gmail uses an App Password if applicable
 
-**Problem**: Team activities not working (showing "Individual" instead).
-- **Solution 1**: Ensure you've run `python migrate_db.py` to add `type` and `max_team_size` columns.
-- **Solution 2**: Restart the application after migration.
-- **Solution 3**: Edit the activity in the admin panel and explicitly set "Activity Type" to "Team".
-- **Solution 4**: Verify `max_team_size` is greater than 1 (default should be 2).
+### Student cannot cancel
 
-**Problem**: Partner search returns no results.
-- **Cause 1**: Not enough characters typed (minimum 2 required).
-- **Cause 2**: Partners already registered for the activity won't appear in suggestions.
-- **Cause 3**: Student database is empty or search term doesn't match student names/IDs.
-- **Solution**: Bulk import students first from the admin Student Management page using an Excel file.
+Current logic blocks self-cancellation when `activity.status == "close"`. That is expected behavior.
 
-**Problem**: Can't register for activity - "No seats available" message.
-- **Solution**: The activity has reached its quota. Confirm with an admin to increase quota or cancel other registrations.
+### Team registration is not appearing
 
-**Problem**: Student can register for same activity twice.
-- **Cause**: This shouldn't happen - the database has a unique constraint.
-- **Solution**: Log out and log back in. Refresh the page. Contact admin if issue persists.
+Check:
 
-### Export Issues
+- the activity `type` is `team`
+- `max_team_size` is greater than `1`
+- selected partner numbers exist in the student table
 
-**Problem**: PDF export opens blank or crashes.
-- **Solution 1**: Ensure the `frontend/static/fonts/` directory exists with SukhumvitSet font files.
-- **Solution 2**: The export falls back to Helvetica if Thai font unavailable (export will still work, just without Thai font optimization).
-- **Solution 3**: Check browser console for JavaScript errors.
+### Admin login does not work
 
-**Problem**: Excel export has incorrect character encoding (Thai text appears garbled).
-- **Cause**: openpyxl encoding issue.
-- **Solution**: Open the Excel file and re-save it with UTF-8 encoding in Excel or Google Sheets.
+Check:
 
-**Problem**: Pop-up blocker prevents PDF from opening.
-- **Solution**: Check your browser's pop-up blocker settings and allow pop-ups for your site.
+- default account was not removed
+- username/password are correct
+- the browser still has a valid token flow
 
-### Student Import Issues
+If needed for local development, back up and delete `sicday.db`, then restart to reseed the default admin.
 
-**Problem**: "Invalid Excel format" error during student import.
-- **Solution 1**: Verify Excel file has correct columns:
-  - **6-column format**: `รหัส`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
-  - **5-column format**: `รหัส`, `ชื่อ`, `นามสกุล`, `ห้อง`, `เลขที่`
-- **Solution 2**: Ensure there are no extra blank columns or rows.
-- **Solution 3**: Save the Excel file as .xlsx format (not .xls or .csv).
+## Security Notes
 
-**Problem**: Students import but duplicate entries appear.
-- **Cause**: Student ID numbers already exist in the database.
-- **Solution**: Delete existing students first or update the Excel file with unique student IDs.
-
-### Performance Issues
-
-**Problem**: System is slow or unresponsive.
-- **Solution 1**: Check system resources (RAM, CPU) using Task Manager.
-- **Solution 2**: Reduce number of concurrent users.
-- **Solution 3**: Archive old registrations to a backup database if it's very large.
-- **Solution 4**: Disable real-time polling on analytics pages if not needed.
-
-**Problem**: Activities page loads very slowly.
-- **Cause**: Too many activities or registrations in database.
-- **Solution**: Ensure database indices are present. Restart the server and clear any cached data.
-
-### Announcement Issues
-
-**Problem**: Announced messages not appearing on public page.
-- **Solution 1**: Make sure the announcement is marked as `is_active = true` in the database.
-- **Solution 2**: Check the WebSocket connection in the browser console (should connect to `/ws/activities`).
-- **Solution 3**: Clear browser cache (Ctrl+Shift+Delete in most browsers).
-
-**Problem**: Urgent announcement popup not showing.
-- **Solution 1**: Check if `is_urgent` is `true` for the announcement in the admin panel.
-- **Solution 2**: Clear localStorage (`localStorage.clear()` in browser console) to reset dismissed state.
-- **Solution 3**: Edit and re-save the announcement in admin panel — this refreshes the timestamp and resets all dismissals.
-
----
+- the default seeded admin credentials are only for first-run convenience
+- `SECRET_KEY` in `backend/auth.py` is still hardcoded and should be replaced for production use
+- CORS is currently open to `*`
+- SQLite is suitable for local or small deployments, but not ideal for high-write, high-concurrency production workloads
+- mail credentials are stored in plaintext `.env`, so protect file access accordingly
 
 ## License
 
-This project is open-source and available under the [MIT License](LICENSE).
+This repository is licensed under the [MIT License](LICENSE).

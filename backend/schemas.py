@@ -96,6 +96,7 @@ class RegistrationCreate(BaseModel):
     classroom: str
     number: str
     activity_id: int
+    email: Optional[str] = None
     # New fields for V3
     team_name: Optional[str] = None
     partner_numbers: Optional[List[str]] = []
@@ -191,7 +192,28 @@ class MessageResponse(BaseModel):
 class DashboardStats(BaseModel):
     total_students: int
     total_registrations: int
+    mail_configured: bool = False
     activities: List[Activity]
+
+
+class MailSettingsUpdate(BaseModel):
+    mail_username: str
+    mail_password: Optional[str] = None
+    mail_from: str
+    mail_port: int = 587
+    mail_server: str
+    mail_from_name: str
+
+
+class MailSettingsResponse(BaseModel):
+    mail_username: str
+    mail_password: str = ""
+    mail_from: str
+    mail_port: int
+    mail_server: str
+    mail_from_name: str
+    has_password: bool = False
+    is_configured: bool = False
 
 
 class BulkActionIds(BaseModel):
