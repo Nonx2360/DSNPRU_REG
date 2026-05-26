@@ -259,7 +259,7 @@ Use this format:
 MAIL_USERNAME=your-email@gmail.com
 MAIL_PASSWORD=your-app-password
 MAIL_FROM=your-email@gmail.com
-MAIL_PORT=587
+MAIL_PORT=465
 MAIL_SERVER=smtp.gmail.com
 MAIL_FROM_NAME=DSNPRU Waitlist
 ```

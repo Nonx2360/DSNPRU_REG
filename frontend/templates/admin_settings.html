@@ -11,7 +11,7 @@
                 mail_username: '',
                 mail_password: '',
                 mail_from: '',
-                mail_port: 587,
+                mail_port: 465,
                 mail_server: 'smtp.gmail.com',
                 mail_from_name: 'DSNPRU Waitlist'
             },
@@ -29,7 +29,7 @@
                     const data = res.data;
                     this.form.mail_username = data.mail_username || '';
                     this.form.mail_from = data.mail_from || '';
-                    this.form.mail_port = data.mail_port || 587;
+                    this.form.mail_port = data.mail_port || 465;
                     this.form.mail_server = data.mail_server || 'smtp.gmail.com';
                     this.form.mail_from_name = data.mail_from_name || 'DSNPRU Waitlist';
                     this.form.mail_password = '';
@@ -49,7 +49,7 @@
                     `MAIL_USERNAME=${this.form.mail_username || ''}`,
                     `MAIL_PASSWORD=${previewPassword}`,
                     `MAIL_FROM=${this.form.mail_from || ''}`,
-                    `MAIL_PORT=${this.form.mail_port || 587}`,
+                    `MAIL_PORT=${this.form.mail_port || 465}`,
                     `MAIL_SERVER=${this.form.mail_server || ''}`,
                     `MAIL_FROM_NAME=${this.form.mail_from_name || ''}`
                 ].join('\n');
@@ -155,7 +155,7 @@
                 <pre style="margin: 0; padding: var(--space-md); background: var(--color-bg-base); border: 1px solid var(--color-border); overflow-x: auto; font-size: 0.8125rem; line-height: 1.6;"><code x-text="envPreview()"></code></pre>
                 <div style="margin-top: var(--space-lg); padding: var(--space-md); border: 1px solid var(--color-border); background: var(--color-surface-hover);">
                     <div class="form-label" style="margin-bottom: 6px;">คำแนะนำ</div>
-                    <p style="font-size: 0.875rem; margin-bottom: 8px;">สำหรับ Gmail ให้ใช้ App Password แทนรหัสผ่านปกติ และใช้พอร์ต 587 กับ `smtp.gmail.com`</p>
+                    <p style="font-size: 0.875rem; margin-bottom: 8px;">สำหรับ Gmail ให้ใช้ App Password แทนรหัสผ่านปกติ และใช้พอร์ต 465 กับ `smtp.gmail.com`</p>
                     <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 0;">เมื่อกิจกรรมเต็ม นักเรียนจะต้องกรอกอีเมลก่อนเข้าคิวสำรอง และระบบจะใช้อีเมลนี้ส่งข้อความยืนยันการเข้าคิว</p>
                 </div>
             </div>

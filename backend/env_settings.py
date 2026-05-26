@@ -16,7 +16,7 @@ MAIL_DEFAULTS = {
     "MAIL_USERNAME": "",
     "MAIL_PASSWORD": "",
     "MAIL_FROM": "",
-    "MAIL_PORT": "587",
+    "MAIL_PORT": "465",
     "MAIL_SERVER": "smtp.gmail.com",
     "MAIL_FROM_NAME": "DSNPRU Waitlist",
 }
@@ -112,12 +112,12 @@ def write_mail_settings(settings: dict[str, str]) -> dict[str, str]:
 
 def serialize_mail_settings() -> dict[str, str | bool | int]:
     settings = get_mail_settings()
-    port_value = settings.get("MAIL_PORT", "587").strip()
+    port_value = settings.get("MAIL_PORT", "465").strip()
     return {
         "mail_username": settings.get("MAIL_USERNAME", ""),
         "mail_password": "",
         "mail_from": settings.get("MAIL_FROM", ""),
-        "mail_port": int(port_value) if port_value.isdigit() else 587,
+        "mail_port": int(port_value) if port_value.isdigit() else 465,
         "mail_server": settings.get("MAIL_SERVER", ""),
         "mail_from_name": settings.get("MAIL_FROM_NAME", ""),
         "has_password": bool(settings.get("MAIL_PASSWORD", "").strip()),

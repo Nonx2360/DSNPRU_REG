@@ -200,7 +200,7 @@ class MailSettingsUpdate(BaseModel):
     mail_username: str
     mail_password: Optional[str] = None
     mail_from: str
-    mail_port: int = 587
+    mail_port: int = 465
     mail_server: str
     mail_from_name: str
 
