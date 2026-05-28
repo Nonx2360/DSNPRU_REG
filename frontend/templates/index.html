@@ -554,9 +554,7 @@
                         </div>
 
                         <template x-if="reg.activity?.status === 'open'">
-                            <button @click="cancelRegistration(reg)" class="btn btn--outline text-danger">
-                                ยกเลิก
-                            </button>
+
                         </template>
                         <template x-if="reg.activity?.status !== 'open'">
                             <span class="badge">ปิดรับสมัครแล้ว</span>
