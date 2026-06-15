@@ -122,6 +122,15 @@ def export_pdf(
         alignment=1, # Center
     )
     
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=11,
+        leading=14,
+        alignment=1, # Center
+    )
+    
     title_text = "รายชื่อผู้ลงทะเบียนกิจกรรม DSNPRU_REG"
     if activity_id and regs:
         title_text = f"รายชื่อผู้ลงทะเบียน: {regs[0].activity.title}"
@@ -137,7 +146,8 @@ def export_pdf(
         regs = sorted(regs, key=lambda x: (x.student.classroom or "", x.student.sequence or 0))
 
     def get_team_paragraph(name):
-        if not name: return "-"
+        if not name:
+            return Paragraph("-", cell_style)
         import hashlib
         h = int(hashlib.md5(name.encode()).hexdigest(), 16)
         r = (h & 0xFF) % 150 # darker colors for white text
@@ -162,9 +172,9 @@ def export_pdf(
         for i, r in enumerate(regs, 1):
             data.append([
                 str(i),
-                r.activity.title,
+                Paragraph(r.activity.title or "-", cell_style),
                 get_team_paragraph(r.team_name),
-                r.student.name,
+                Paragraph(r.student.name or "-", cell_style),
                 r.student.classroom or "-",
                 r.student.number
             ])
@@ -174,12 +184,12 @@ def export_pdf(
         for i, r in enumerate(regs, 1):
             data.append([
                 str(i),
-                r.activity.title,
-                r.student.name,
+                Paragraph(r.activity.title or "-", cell_style),
+                Paragraph(r.student.name or "-", cell_style),
                 r.student.classroom or "-",
                 r.student.number
             ])
-        colWidths = [40, 160, 180, 80, 50]
+        colWidths = [40, 140, 160, 80, 90]
 
     t = Table(data, colWidths=colWidths)
     t.setStyle(TableStyle([
@@ -298,6 +308,15 @@ def export_students_pdf(
         alignment=1, # Center
     )
     
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        parent=styles['Normal'],
+        fontName=font_name,
+        fontSize=11,
+        leading=14,
+        alignment=1, # Center
+    )
+    
     elements.append(Paragraph("รายชื่อนักเรียนทั้งหมด - DSNPRU_REG", thai_style))
     elements.append(Spacer(1, 20))
 
@@ -307,7 +326,7 @@ def export_students_pdf(
         data.append([
             str(i),
             s.number,
-            s.name,
+            Paragraph(s.name or "-", cell_style),
             s.classroom or "-",
             str(s.sequence) if s.sequence else "-"
         ])
