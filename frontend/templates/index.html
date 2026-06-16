@@ -137,6 +137,12 @@
                     return;
                 }
 
+                // Require team name if it's a team activity and not applying alone
+                if (this.selectedActivity && this.selectedActivity.type === 'team' && !this.applyAlone && !this.teamName.trim()) {
+                    Swal.fire('ต้องระบุชื่อทีม', 'กรุณากรอกชื่อทีมสำหรับกิจกรรมประเภททีม', 'warning');
+                    return;
+                }
+
                 const payload = {
                     ...this.form,
                     team_name: this.teamName,
@@ -346,6 +352,59 @@
                                 ระบบจะใช้อีเมลนี้ส่งการยืนยันเมื่อกิจกรรมเต็มและคุณถูกจัดเข้าคิวสำรอง
                             </p>
                         </div>
+
+                        <!-- Team Registration Form (Integrated) -->
+                        <div x-show="selectedActivity && selectedActivity.type === 'team'" x-cloak 
+                            style="margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px dashed var(--color-border);">
+                            <h3 style="font-size: 0.875rem; margin-bottom: var(--space-md); color: var(--color-primary);">ข้อมูลทีม / ผู้สมัครร่วม</h3>
+                            
+                            <div class="form-group">
+                                <label class="form-label">ชื่อทีม (จำเป็น)</label>
+                                <input type="text" x-model="teamName" placeholder="ระบุชื่อทีมของคุณ..."
+                                    class="form-input">
+                            </div>
+
+                            <div style="margin-bottom: var(--space-md);">
+                                <label class="form-label">สมาชิกในทีม (ไม่รวมตัวคุณ)</label>
+                                <template x-for="(partner, index) in partners" :key="index">
+                                    <div style="display: flex; gap: var(--space-sm); align-items: flex-start; margin-bottom: var(--space-sm);">
+                                        <div style="flex: 1; position: relative;">
+                                            <input type="text" x-model="partner.query"
+                                                @input.debounce.300ms="searchPartner(index)"
+                                                placeholder="ค้นหาเพื่อนด้วยชื่อ หรือ รหัส..." class="form-input">
+
+                                            <div x-show="partner.results.length > 0" class="results-dropdown" x-cloak>
+                                                <template x-for="p in partner.results" :key="p.id">
+                                                    <button type="button" @click="selectPartner(index, p)" class="results-dropdown__item">
+                                                        <div style="font-weight: 600; font-size: 0.8125rem;" x-text="p.name"></div>
+                                                        <div style="font-size: 0.75rem;" x-text="p.number"></div>
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="removePartner(index)" class="btn btn--outline text-danger"
+                                            style="padding: 6px 12px;">✕</button>
+                                    </div>
+                                </template>
+
+                                <div style="display: flex; gap: var(--space-sm); align-items: center; margin-top: var(--space-sm);">
+                                    <button type="button" @click="addPartner"
+                                        x-show="selectedActivity && partners.length < (selectedActivity.max_team_size - 1)"
+                                        class="btn btn--outline" style="font-size: 0.75rem; padding: 4px 8px;">
+                                        + เพิ่มสมาชิก
+                                    </button>
+                                    <span style="font-size: 0.75rem; color: var(--color-text-muted);"
+                                        x-text="selectedActivity ? '(สูงสุด ' + selectedActivity.max_team_size + ' คน)' : ''"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; font-size: 0.875rem;">
+                                    <input type="checkbox" x-model="applyAlone">
+                                    สมัครคนเดียว (ไม่ระบุทีม)
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="student-profile__footer">
@@ -438,61 +497,6 @@
                         </div>
                     </template>
                 </div>
-
-                <!-- Team Registration Form Area -->
-                <div x-show="selectedActivity && selectedActivity.type === 'team'" x-cloak class="card mt-sm">
-                    <h3 style="font-size: 1rem; margin-bottom: var(--space-md);">ข้อมูลทีม / ผู้สมัครร่วม</h3>
-                    <div class="form-group">
-                        <label class="form-label">ชื่อทีม (ถ้ามี)</label>
-                        <input type="text" x-model="teamName" placeholder="เช่น ทีมหมูป่า, กลุ่มเพื่อนรัก"
-                            class="form-input">
-                    </div>
-
-                    <div style="margin-bottom: var(--space-md);">
-                        <label class="form-label">สมาชิกในทีม (ไม่รวมตัวคุณ)</label>
-                        <template x-for="(partner, index) in partners" :key="index">
-                            <div
-                                style="display: flex; gap: var(--space-sm); align-items: flex-start; margin-bottom: var(--space-sm);">
-                                <div style="flex: 1; position: relative;">
-                                    <input type="text" x-model="partner.query"
-                                        @input.debounce.300ms="searchPartner(index)"
-                                        placeholder="ค้นหาเพื่อนด้วยชื่อ หรือ รหัสนักเรียน..." class="form-input">
-
-                                    <div x-show="partner.results.length > 0" class="results-dropdown" x-cloak>
-                                        <template x-for="p in partner.results" :key="p.id">
-                                            <button @click="selectPartner(index, p)" class="results-dropdown__item">
-                                                <div style="font-weight: 600;" x-text="p.name"></div>
-                                                <div style="font-size: 0.75rem;" x-text="p.number"></div>
-                                            </button>
-                                        </template>
-                                    </div>
-                                </div>
-                                <button type="button" @click="removePartner(index)" class="btn btn--outline text-danger"
-                                    style="padding: 6px 12px;">✕</button>
-                            </div>
-                        </template>
-
-                        <div
-                            style="display: flex; gap: var(--space-md); align-items: center; margin-top: var(--space-sm);">
-                            <button type="button" @click="addPartner"
-                                x-show="selectedActivity && partners.length < (selectedActivity.max_team_size - 1)"
-                                class="btn btn--outline" style="font-size: 0.75rem; padding: 4px 8px;">
-                                + เพิ่มสมาชิก
-                            </button>
-                            <span style="font-size: 0.75rem; color: var(--color-text-muted);"
-                                x-text="selectedActivity ? '(สูงสุด ' + selectedActivity.max_team_size + ' คน)' : ''"></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label
-                            style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; font-size: 0.875rem;">
-                            <input type="checkbox" x-model="applyAlone">
-                            สมัครคนเดียว (ไม่ระบุทีม)
-                        </label>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div> <!-- End Register Tab -->
