@@ -10,6 +10,7 @@
             form: { title: '', description: '', max_people: 30, status: 'open', group_id: null, allowed_classrooms: [], start_time: null, end_time: null, color: '#D95D39', type: 'individual', max_team_size: 1 },
             groupForm: { name: '', quota: 3, allowed_classrooms: [], is_visible: true },
             showGroupManager: false,
+            editingActivityId: null,
             async load() {
                 const token = sessionStorage.getItem('adminToken');
                 if (!token) { window.location.href = '/admin/login'; return; }
@@ -152,6 +153,65 @@
                 } catch (e) {
                     Swal.fire('ผิดพลาด', 'ไม่สามารถลบกิจกรรมได้', 'error');
                 }
+            },
+            editActivity(activity) {
+                this.editingActivityId = activity.id;
+                
+                const formatDatetime = (dtStr) => {
+                    if (!dtStr) return '';
+                    if (dtStr.includes('T')) {
+                        return dtStr.slice(0, 16);
+                    }
+                    return dtStr;
+                };
+
+                this.form = {
+                    title: activity.title || '',
+                    description: activity.description || '',
+                    max_people: activity.max_people,
+                    status: activity.status || 'open',
+                    group_id: activity.group_id,
+                    allowed_classrooms: [...(activity.allowed_classrooms || [])],
+                    start_time: formatDatetime(activity.start_time),
+                    end_time: formatDatetime(activity.end_time),
+                    color: activity.color || '#D95D39',
+                    type: activity.type || 'individual',
+                    max_team_size: activity.max_team_size || 1
+                };
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+            cancelEdit() {
+                this.editingActivityId = null;
+                this.form = { title: '', description: '', max_people: 30, status: 'open', group_id: null, allowed_classrooms: [], start_time: null, end_time: null, color: '#D95D39', type: 'individual', max_team_size: 1 };
+            },
+            async saveActivity() {
+                const token = sessionStorage.getItem('adminToken');
+                const payload = { 
+                    ...this.form, 
+                    allowed_classrooms: this.form.allowed_classrooms.join(','),
+                    start_time: this.form.start_time || null,
+                    end_time: this.form.end_time || null
+                };
+                
+                try {
+                    const res = await axios.put(`/admin/activities/${this.editingActivityId}`, payload, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    });
+                    
+                    const idx = this.activities.findIndex(a => a.id === this.editingActivityId);
+                    if (idx !== -1) {
+                        this.activities[idx] = {
+                            ...res.data,
+                            allowed_classrooms: res.data.allowed_classrooms ? res.data.allowed_classrooms.split(',').map(c => c.trim()) : []
+                        };
+                    }
+                    
+                    this.cancelEdit();
+                    Toastify({ text: 'แก้ไขกิจกรรมสำเร็จ', backgroundColor: '#10b981' }).showToast();
+                } catch (e) {
+                    Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไขกิจกรรมได้', 'error');
+                }
             }
         }));
     });
@@ -233,12 +293,19 @@
             <!-- Left Pane: Create Form -->
             <div class="card" style="flex: 1; min-width: 300px; max-width: 400px; height: fit-content; border: 2px solid var(--color-border);">
                 <h2 class="text-muted mb-md" style="font-size: 0.875rem; letter-spacing: 1px; display: flex; align-items: center; gap: var(--space-sm); text-transform: uppercase;">
-                    <div class="badge badge--success border-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
+                    <div class="badge border-none" :class="editingActivityId ? 'badge--warning' : 'badge--success'">
+                        <template x-if="!editingActivityId">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                        </template>
+                        <template x-if="editingActivityId">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </template>
                     </div>
-                    สร้างกิจกรรมใหม่
+                    <span x-text="editingActivityId ? 'แก้ไขกิจกรรม' : 'สร้างกิจกรรมใหม่'"></span>
                 </h2>
                 
                 <div class="form-group">
@@ -309,8 +376,11 @@
                     </div>
                 </div>
 
-                <button type="button" @click="createActivity" class="btn btn--accent" style="width: 100%; margin-top: var(--space-sm);">
-                    บันทึกกิจกรรม
+                <button type="button" @click="editingActivityId ? saveActivity() : createActivity()" class="btn btn--accent" style="width: 100%; margin-top: var(--space-sm);">
+                    <span x-text="editingActivityId ? 'บันทึกการแก้ไข' : 'บันทึกกิจกรรม'"></span>
+                </button>
+                <button type="button" x-show="editingActivityId" @click="cancelEdit" class="btn btn--outline" style="width: 100%; margin-top: var(--space-xs); color: var(--color-muted);">
+                    ยกเลิกการแก้ไข
                 </button>
             </div>
 
@@ -352,14 +422,17 @@
                                 <span style="font-weight: 700;" :style="activity.remaining_seats > 0 ? 'color: var(--color-success);' : 'color: var(--color-danger);'" x-text="'เหลือ ' + activity.remaining_seats + ' ที่'"></span>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-xs); margin-top: var(--space-sm);">
-                                <button class="btn btn--outline" style="font-size: 0.75rem; padding: 4px;" :style="activity.status === 'open' ? 'color: var(--color-warning);' : 'color: var(--color-success);'" @click="toggle(activity)">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xs); margin-top: var(--space-sm);">
+                                <button type="button" class="btn btn--outline" style="font-size: 0.75rem; padding: 4px;" :style="activity.status === 'open' ? 'color: var(--color-warning);' : 'color: var(--color-success);'" @click="toggle(activity)">
                                     <span x-text="activity.status === 'open' ? 'ปิดรับด่วน' : 'กลับมาเปิด'"></span>
                                 </button>
-                                <button class="btn btn--outline" style="font-size: 0.75rem; padding: 4px; color: var(--color-danger);" @click="remove(activity)">
+                                <button type="button" class="btn btn--outline" style="font-size: 0.75rem; padding: 4px; color: var(--color-warning);" @click="editActivity(activity)">
+                                    แก้ไข
+                                </button>
+                                <button type="button" class="btn btn--outline" style="font-size: 0.75rem; padding: 4px; color: var(--color-danger);" @click="remove(activity)">
                                     ลบ
                                 </button>
-                                <a :href="`/admin/activity/${activity.id}`" class="btn btn--primary" style="font-size: 0.75rem; padding: 4px; text-decoration: none;">
+                                <a :href="`/admin/activity/${activity.id}`" class="btn btn--primary" style="font-size: 0.75rem; padding: 4px; text-decoration: none; display: flex; justify-content: center; align-items: center; text-align: center;">
                                     จัดการ
                                 </a>
                             </div>
