@@ -276,6 +276,8 @@ def create_activity(
         group_name=activity.group.name if activity.group else None,
         registered_count=0,
         remaining_seats=activity.max_people,
+        type=activity.type,
+        max_team_size=activity.max_team_size,
     )
 
 
@@ -303,6 +305,8 @@ def admin_list_activities(
                 group_name=a.group.name if a.group else None,
                 registered_count=registered,
                 remaining_seats=remaining,
+                type=a.type,
+                max_team_size=a.max_team_size,
             )
         )
     return result
