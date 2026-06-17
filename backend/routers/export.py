@@ -207,7 +207,18 @@ def export_pdf(
     ]))
     
     elements.append(t)
-    doc.build(elements)
+    
+    def add_footer(canvas, doc):
+        canvas.saveState()
+        try:
+            canvas.setFont(font_name, 9)
+        except:
+            canvas.setFont("Helvetica", 9)
+        canvas.setFillColor(colors.grey)
+        canvas.drawRightString(A4[0] - 30, 15, "Auto Generate Using DSNPRU_REG By Nonx2360")
+        canvas.restoreState()
+
+    doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
     
     stream.seek(0)
     filename = f"registrations_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
@@ -348,7 +359,18 @@ def export_students_pdf(
     ]))
     
     elements.append(t)
-    doc.build(elements)
+    
+    def add_footer(canvas, doc):
+        canvas.saveState()
+        try:
+            canvas.setFont(font_name, 9)
+        except:
+            canvas.setFont("Helvetica", 9)
+        canvas.setFillColor(colors.grey)
+        canvas.drawRightString(A4[0] - 30, 15, "Auto Generate Using DSNPRU_REG By Nonx2360")
+        canvas.restoreState()
+
+    doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
     
     stream.seek(0)
     filename = f"students_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
