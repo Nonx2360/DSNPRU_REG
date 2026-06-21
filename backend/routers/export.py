@@ -215,7 +215,7 @@ def export_pdf(
         except:
             canvas.setFont("Helvetica", 9)
         canvas.setFillColor(colors.grey)
-        canvas.drawRightString(A4[0] - 30, 15, "Auto Generate Using DSNPRU_REG By Nonx2360")
+        canvas.drawRightString(A4[0] - 30, 15, "Auto Generate Using DSNPRU_REG By ณัฐชนน รอดน้อย 04824")
         canvas.restoreState()
 
     doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
@@ -367,7 +367,7 @@ def export_students_pdf(
         except:
             canvas.setFont("Helvetica", 9)
         canvas.setFillColor(colors.grey)
-        canvas.drawRightString(A4[0] - 30, 15, "Auto Generate Using DSNPRU_REG By Nonx2360")
+        canvas.drawRightString(A4[0] - 30, 15, "Auto Generate Using DSNPRU_REG By ณัฐชนน รอดน้อย 04824")
         canvas.restoreState()
 
     doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
