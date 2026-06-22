@@ -63,14 +63,26 @@ def build_pdf(activity, regs, font_name):
     else:
         regs = sorted(regs, key=lambda x: (x.student.classroom or "", x.student.sequence or 0))
 
+    def get_team_color(seed, dark=False):
+        h = int(hashlib.md5(str(seed).encode()).hexdigest(), 16)
+        if dark:
+            r_val = (h & 0xFF) % 150
+            g_val = ((h >> 8) & 0xFF) % 150
+            b_val = ((h >> 16) & 0xFF) % 150
+        else:
+            r_val = 180 + ((h & 0xFF) % 65)
+            g_val = 180 + (((h >> 8) & 0xFF) % 65)
+            b_val = 180 + (((h >> 16) & 0xFF) % 65)
+        return colors.Color(r_val / 255.0, g_val / 255.0, b_val / 255.0)
+
+    unnamed_team_color = colors.Color(1.0, 0.90, 0.35)
+
     def get_team_paragraph(name):
         if not name:
-            return Paragraph("-", cell_style)
+            style = ParagraphStyle("UnnamedTeam", parent=styles["Normal"], fontName=font_name, fontSize=11, alignment=1, textColor=colors.black)
+            return Paragraph("-", style)
         h = int(hashlib.md5(name.encode()).hexdigest(), 16)
-        r_val = (h & 0xFF) % 150
-        g_val = ((h >> 8) & 0xFF) % 150
-        b_val = ((h >> 16) & 0xFF) % 150
-        bg = colors.Color(r_val / 255.0, g_val / 255.0, b_val / 255.0)
+        bg = get_team_color(name, dark=True)
         style = ParagraphStyle(f"Team_{h}", parent=styles["Normal"], fontName=font_name, fontSize=11, alignment=1, textColor=colors.white, backColor=bg, borderPadding=4)
         return Paragraph(name, style)
 
@@ -85,8 +97,7 @@ def build_pdf(activity, regs, font_name):
             data.append([str(i), Paragraph(r.activity.title or "-", cell_style), Paragraph(r.student.name or "-", cell_style), r.student.classroom or "-", r.student.number])
         col_widths = [40, 140, 160, 80, 90]
 
-    t = Table(data, colWidths=col_widths)
-    t.setStyle(TableStyle([
+    table_style_commands = [
         ("FONTNAME", (0, 0), (-1, -1), font_name),
         ("FONTSIZE", (0, 0), (-1, 0), 12),
         ("FONTSIZE", (0, 1), (-1, -1), 11),
@@ -98,7 +109,14 @@ def build_pdf(activity, regs, font_name):
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ("TOPPADDING", (0, 0), (-1, -1), 6),
-    ]))
+    ]
+    if is_team:
+        for row_index, reg in enumerate(regs, 1):
+            if not reg.team_name:
+                table_style_commands.append(("BACKGROUND", (2, row_index), (2, row_index), unnamed_team_color))
+
+    t = Table(data, colWidths=col_widths)
+    t.setStyle(TableStyle(table_style_commands))
     elements.append(t)
 
     def add_footer(c, doc):

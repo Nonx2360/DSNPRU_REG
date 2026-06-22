@@ -83,7 +83,11 @@
                     headers: { Authorization: 'Bearer ' + token },
                     responseType: 'blob'
                 });
-                saveAs(res.data, 'registrations.xlsx');
+                const disposition = res.headers['content-disposition'] || '';
+                const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/);
+                const asciiMatch = disposition.match(/filename="([^"]+)"/);
+                const filename = utf8Match ? decodeURIComponent(utf8Match[1]) : (asciiMatch ? asciiMatch[1] : 'registrations.xlsx');
+                saveAs(res.data, filename);
             },
             async exportPdf() {
                 const token = sessionStorage.getItem('adminToken');

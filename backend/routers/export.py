@@ -1,11 +1,16 @@
 import os
+import re
+import hashlib
 from io import BytesIO
 from datetime import datetime
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -18,6 +23,11 @@ from ..database import get_db
 router = APIRouter()
 
 
+def _sanitize_filename(name: str) -> str:
+    name = re.sub(r'[\\/*?:"<>|]', "", name or "")
+    return name.strip()[:200] or "registrations"
+
+
 def _get_registrations(db: Session, activity_id: Optional[int] = None):
     query = db.query(models.Registration).join(models.Student).join(models.Activity)
     if activity_id:
@@ -25,24 +35,71 @@ def _get_registrations(db: Session, activity_id: Optional[int] = None):
     return query.all()
 
 
-@router.get("/excel")
-def export_excel(
-    activity_id: Optional[int] = None,
-    db: Session = Depends(get_db),
-    admin=Depends(get_current_admin),
-):
-    regs = _get_registrations(db, activity_id)
-    is_team = False
-    if regs and hasattr(regs[0].activity, 'type') and regs[0].activity.type == "team":
-        is_team = True
+def _pastel_hex(seed: str) -> str:
+    h = int(hashlib.md5(seed.encode()).hexdigest(), 16)
+    red = 190 + ((h & 0xFF) % 50)
+    green = 190 + (((h >> 8) & 0xFF) % 50)
+    blue = 190 + (((h >> 16) & 0xFF) % 50)
+    return f"{red:02X}{green:02X}{blue:02X}"
+
+
+def _safe_sheet_title(name: str) -> str:
+    name = re.sub(r"[\[\]:*?/\\]", "", name or "")
+    return (name.strip() or "Registrations")[:31]
+
+
+def _style_registration_sheet(ws, is_team: bool, regs, activity_title: str = ""):
+    thin_gray = Side(style="thin", color="D1D5DB")
+    border = Border(left=thin_gray, right=thin_gray, top=thin_gray, bottom=thin_gray)
+    header_fill = PatternFill("solid", fgColor="1F2937")
+    header_font = Font(color="FFFFFF", bold=True)
+    title_fill = PatternFill("solid", fgColor="E5E7EB")
+    unnamed_team_fill = PatternFill("solid", fgColor="FFE666")
+
+    max_column = ws.max_column
+    ws.insert_rows(1)
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_column)
+    ws.cell(1, 1).value = "รายชื่อผู้ลงทะเบียน"
+    if activity_title:
+        ws.cell(1, 1).value = f"รายชื่อผู้ลงทะเบียน: {activity_title}"
+    ws.cell(1, 1).fill = title_fill
+    ws.cell(1, 1).font = Font(bold=True, size=14, color="111827")
+    ws.cell(1, 1).alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 28
+
+    for cell in ws[2]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = border
+    ws.row_dimensions[2].height = 24
+
+    for row in ws.iter_rows(min_row=3, max_row=ws.max_row):
+        for cell in row:
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        row[0].alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        if is_team:
+            team_name = row[1].value
+            row[1].fill = unnamed_team_fill if team_name == "-" else PatternFill("solid", fgColor=_pastel_hex(str(team_name)))
+            row[1].font = Font(bold=True, color="111827")
+
+    widths = [34, 22, 30, 14, 16] if is_team else [38, 32, 14, 16]
+    for index, width in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(index)].width = width
+
+    ws.freeze_panes = "A3"
+    ws.auto_filter.ref = f"A2:{get_column_letter(max_column)}{ws.max_row}"
+
+
+def _add_registration_sheet(wb, activity, regs, title=None):
+    is_team = activity.type == "team"
+    if is_team:
         regs = sorted(regs, key=lambda x: (x.team_name or "", x.student.classroom or "", x.student.sequence or 0))
     else:
         regs = sorted(regs, key=lambda x: (x.student.classroom or "", x.student.sequence or 0))
 
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Registrations"
-    
+    ws = wb.create_sheet(_safe_sheet_title(title or activity.title))
     if is_team:
         ws.append(["กิจกรรม", "ทีม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"])
         for r in regs:
@@ -63,14 +120,69 @@ def export_excel(
                 r.student.number,
             ])
 
+    _style_registration_sheet(ws, is_team, regs, activity.title)
+    return ws
+
+
+@router.get("/excel")
+def export_excel(
+    activity_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    if activity_id:
+        activity = db.query(models.Activity).filter(models.Activity.id == activity_id).first()
+        regs = _get_registrations(db, activity_id)
+        if activity:
+            _add_registration_sheet(wb, activity, regs)
+            filename = f"{_sanitize_filename(activity.title)}.xlsx"
+        elif regs:
+            _add_registration_sheet(wb, regs[0].activity, regs)
+            filename = f"{_sanitize_filename(regs[0].activity.title)}.xlsx"
+        else:
+            ws = wb.create_sheet("Registrations")
+            ws.append(["กิจกรรม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"])
+            _style_registration_sheet(ws, False, [], "")
+            filename = "registrations.xlsx"
+    else:
+        activities = db.query(models.Activity).order_by(models.Activity.id).all()
+        all_regs = _get_registrations(db)
+        regs_by_activity = {}
+        for reg in all_regs:
+            regs_by_activity.setdefault(reg.activity_id, []).append(reg)
+        if activities:
+            used_titles = {}
+            for activity in activities:
+                base_title = _safe_sheet_title(activity.title)
+                used_titles[base_title] = used_titles.get(base_title, 0) + 1
+                if used_titles[base_title] == 1:
+                    sheet_title = base_title
+                else:
+                    suffix = f"_{used_titles[base_title]}"
+                    sheet_title = f"{base_title[:31 - len(suffix)]}{suffix}"
+                _add_registration_sheet(wb, activity, regs_by_activity.get(activity.id, []), sheet_title)
+        else:
+            ws = wb.create_sheet("Registrations")
+            ws.append(["กิจกรรม", "ชื่อ-สกุล", "ห้อง", "รหัสนักเรียน"])
+            _style_registration_sheet(ws, False, [], "")
+        filename = f"all_activity_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+
     stream = BytesIO()
     wb.save(stream)
     stream.seek(0)
-    filename = "registrations.xlsx"
+    ascii_filename = filename.encode("ascii", "ignore").decode() or "registrations.xlsx"
     return Response(
         content=stream.read(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{ascii_filename}"; '
+                f"filename*=UTF-8''{quote(filename)}"
+            )
+        },
     )
 
 
@@ -145,15 +257,36 @@ def export_pdf(
     else:
         regs = sorted(regs, key=lambda x: (x.student.classroom or "", x.student.sequence or 0))
 
+    def get_team_color(seed, dark=False):
+        import hashlib
+        h = int(hashlib.md5(str(seed).encode()).hexdigest(), 16)
+        if dark:
+            r = (h & 0xFF) % 150 # darker colors for white text
+            g = ((h >> 8) & 0xFF) % 150
+            b = ((h >> 16) & 0xFF) % 150
+        else:
+            r = 180 + ((h & 0xFF) % 65)
+            g = 180 + (((h >> 8) & 0xFF) % 65)
+            b = 180 + (((h >> 16) & 0xFF) % 65)
+        return colors.Color(r/255.0, g/255.0, b/255.0)
+
+    unnamed_team_color = colors.Color(1.0, 0.90, 0.35)
+
     def get_team_paragraph(name):
         if not name:
-            return Paragraph("-", cell_style)
+            style = ParagraphStyle(
+                'UnnamedTeam',
+                parent=styles['Normal'],
+                fontName=font_name,
+                fontSize=11,
+                alignment=1,
+                textColor=colors.black,
+            )
+            return Paragraph("-", style)
+
+        bg_color = get_team_color(name, dark=True)
         import hashlib
         h = int(hashlib.md5(name.encode()).hexdigest(), 16)
-        r = (h & 0xFF) % 150 # darker colors for white text
-        g = ((h >> 8) & 0xFF) % 150
-        b = ((h >> 16) & 0xFF) % 150
-        bg_color = colors.Color(r/255.0, g/255.0, b/255.0)
         
         style = ParagraphStyle(
             f'Team_{h}',
@@ -191,8 +324,7 @@ def export_pdf(
             ])
         colWidths = [40, 140, 160, 80, 90]
 
-    t = Table(data, colWidths=colWidths)
-    t.setStyle(TableStyle([
+    table_style_commands = [
         ('FONTNAME', (0, 0), (-1, -1), font_name),
         ('FONTSIZE', (0, 0), (-1, 0), 12),
         ('FONTSIZE', (0, 1), (-1, -1), 11),
@@ -204,7 +336,16 @@ def export_pdf(
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('TOPPADDING', (0, 0), (-1, -1), 6),
-    ]))
+    ]
+    if is_team:
+        for row_index, reg in enumerate(regs, 1):
+            if not reg.team_name:
+                table_style_commands.append(
+                    ('BACKGROUND', (2, row_index), (2, row_index), unnamed_team_color)
+                )
+
+    t = Table(data, colWidths=colWidths)
+    t.setStyle(TableStyle(table_style_commands))
     
     elements.append(t)
     

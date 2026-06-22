@@ -659,8 +659,12 @@ Routes:
 Behavior:
 
 - optional filtering by `activity_id`
-- team activities include `team_name`
+- Excel export with `activity_id` creates one styled worksheet and downloads as `{activity_name}.xlsx`
+- Excel export without `activity_id` creates `all_activity_{YYYYMMDD_HHMM}.xlsx`
+- all-activity Excel export separates activities into individual worksheet tabs
+- team activities include `team_name` with highlighted team-name cells
 - records are sorted for easier reading
+- PDF export uses the bundled ChakraPetch font when available
 
 ### Student exports
 
