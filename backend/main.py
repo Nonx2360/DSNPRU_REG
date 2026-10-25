@@ -89,7 +89,7 @@ def create_app() -> FastAPI:
 
     @app.get("/about")
     async def about_page(request: Request):
-        return templates.TemplateResponse(request=request, name="404.html")
+        return templates.TemplateResponse(request=request, name="about.html")
 
     @app.get("/admin/login")
     async def admin_login_page(request: Request):

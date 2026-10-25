@@ -162,3 +162,4 @@ sql_app.db
 favicon.ico
 frontend/favicon.ico
 explain.md
+/.agent
