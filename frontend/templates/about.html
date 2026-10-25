@@ -1,84 +1,89 @@
 {% extends "base.html" %} {% block title %}เกี่ยวกับเรา - DSNPRU_REG{% endblock %} {% block content %}
-<div class="fixed inset-0 z-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05]" style="background-image: radial-gradient(#64748b 1px, transparent 1px); background-size: 24px 24px;">
-</div>
 
-<section class="max-w-4xl mx-auto py-12 px-4 relative z-10">
+<section style="max-width: 720px; margin: 0 auto; padding: var(--space-xl) var(--space-md);">
 
-    <div class="text-center mb-12">
-        <div class="badge badge--danger mb-md uppercase" style="letter-spacing: 1px;">
-            System Overview
-        </div>
-
-        <h1 class="mb-sm">เบื้องหลังระบบ <span style="color: var(--color-accent);">DSNPRU REG</span></h1>
-        <p class="text-muted" style="font-size: 1.125rem;">
-            แพลตฟอร์มบริหารจัดการกิจกรรมชุมนุม โรงเรียนสาธิตมหาวิทยาลัยราชภัฏนครปฐม<br>
-            <span style="font-style: italic; font-size: 0.875rem;">"ลดขั้นตอน ลดกระดาษ เพิ่มเวลาเรียนรู้"</span>
+    <!-- Hero -->
+    <div style="text-align: center; margin-bottom: var(--space-2xl);">
+        <h1 class="mb-sm">เกี่ยวกับ <span style="color: var(--color-accent);">DSNPRU REG</span></h1>
+        <p class="text-muted" style="font-size: 1.05rem; max-width: 520px; margin: 0 auto; line-height: 1.7;">
+            ระบบลงทะเบียนกิจกรรมชุมนุมออนไลน์<br>
+            สำหรับนักเรียนโรงเรียนสาธิต มหาวิทยาลัยราชภัฏนครปฐม
         </p>
     </div>
 
-    <div class="grid-cards mb-xl" style="grid-template-columns: 1fr;">
-        <div class="card" style="padding: var(--space-xl);">
-            <div style="display: flex; gap: var(--space-md); margin-bottom: var(--space-xl); align-items: flex-start;">
-                <div class="badge badge--danger" style="padding: var(--space-sm);">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="mb-xs">ทำไมต้องมีระบบนี้?</h2>
-                    <p class="text-muted">
-                        <strong>DSNPRU_REG</strong> ถูกพัฒนาขึ้นเพื่อแก้ปัญหา "การแย่งลงทะเบียน" และความซ้ำซ้อนของข้อมูล เราเปลี่ยนจากระบบกระดาษมาเป็น Digital Platform ที่ช่วยให้นักเรียนเลือกสิ่งที่ชอบได้ทันที และอาจารย์สามารถตรวจสอบโควตาได้แบบ Real-time
-                    </p>
-                </div>
-            </div>
+    <!-- ที่มา -->
+    <p class="text-muted" style="font-size: 0.95rem; line-height: 1.8; text-align: center; max-width: 560px; margin: 0 auto var(--space-2xl);">
+        โปรเจคนี้สร้างขึ้นมาเพื่อแก้ปัญหาการลงทะเบียนชุมนุมแบบเดิมที่ใช้กระดาษ เปลี่ยนมาเป็นระบบออนไลน์ที่รวดเร็ว นักเรียนกดเลือกได้เองรู้ผลทันที และช่วยให้อาจารย์จัดการข้อมูลได้ง่ายขึ้น
+    </p>
 
-            <div class="grid-cards" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <div class="card" style="padding: var(--space-md); background: transparent;">
-                    <div class="badge badge--success mb-sm">
-                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="mb-xs" style="font-size: 1rem;">Real-time Feedback</h3>
-                        <p class="text-muted" style="font-size: 0.75rem;">ทราบผลทันทีที่กดเลือก ไม่ต้องรอลุ้น</p>
-                    </div>
-                </div>
-                <div class="card" style="padding: var(--space-md); background: transparent;">
-                    <div class="badge badge--info mb-sm">
-                        <svg class="icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="mb-xs" style="font-size: 1rem;">Secure Tracking</h3>
-                        <p class="text-muted" style="font-size: 0.75rem;">ข้อมูลปลอดภัย ตรวจสอบโควตาได้ตลอด</p>
-                    </div>
-                </div>
-            </div>
+
+    <!-- Tech Stack -->
+    <div style="text-align: center; margin-bottom: var(--space-lg);">
+        <span class="text-muted" style="font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">สร้างด้วย</span>
+    </div>
+    <div style="display: flex; justify-content: center; gap: var(--space-md); margin-bottom: var(--space-xl); flex-wrap: wrap;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/python-127-svgrepo-com.svg" alt="Python" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">Python</span>
         </div>
-
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/fastapi-svgrepo-com.svg" alt="FastAPI" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">FastAPI</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/Jinja_software_logo.svg" alt="Jinja2" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">Jinja2</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/sqlite-svgrepo-com.svg" alt="SQLite" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">SQLite</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/HTML5_logo_and_wordmark (1).svg" alt="HTML5" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">HTML5</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/CSS3_logo.svg" alt="CSS3" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">CSS3</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/Unofficial_JavaScript_logo_2.svg" alt="JavaScript" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">JavaScript</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/Alpine.js.svg" alt="Alpine.js" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">Alpine.js</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/Chart.js_logo.svg" alt="Chart.js" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">Chart.js</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <img src="/static/img/SVG/Axios_logo_(2020).svg" alt="Axios" style="width: 32px; height: 32px;">
+            <span class="text-muted" style="font-size: 0.65rem;">Axios</span>
+        </div>
     </div>
 
+
+    <!-- Live Stats -->
     <div class="card" x-data="systemData()" x-init="init()" style="padding: 0; overflow: hidden;">
         <div style="background: var(--color-background); padding: var(--space-sm) var(--space-lg); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
-            <span class="text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">LIVE STATUS</span>
+            <span class="text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">สถานะระบบ</span>
             <span class="badge badge--success" style="font-size: 0.65rem;" x-text="info.status">Online</span>
         </div>
 
         <div style="padding: var(--space-xl); text-align: center;">
-            <div style="font-size: 3rem; font-weight: 900; line-height: 1;" x-text="info.total_registrations">...</div>
-            <div class="text-muted mb-xl" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">TOTAL REGISTRATIONS</div>
+            <div style="font-size: 2.75rem; font-weight: 900; line-height: 1;" x-text="info.total_registrations">...</div>
+            <div class="text-muted mb-lg" style="font-size: 0.8rem;">การลงทะเบียนทั้งหมด</div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
                 <div class="card" style="padding: var(--space-md); background: transparent;">
                     <div style="font-size: 1.5rem; font-weight: 700;" x-text="info.total_students">...</div>
-                    <div class="text-muted" style="font-size: 0.75rem;">Students</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">นักเรียน</div>
                 </div>
                 <div class="card" style="padding: var(--space-md); background: transparent;">
                     <div style="font-size: 1.5rem; font-weight: 700;" x-text="info.total_activities">...</div>
-                    <div class="text-muted" style="font-size: 0.75rem;">Activities</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">กิจกรรมชุมนุม</div>
                 </div>
             </div>
         </div>
@@ -94,7 +99,7 @@
                 total_students: '-',
                 total_activities: '-',
                 total_registrations: '-',
-                status: 'Connecting...'
+                status: 'กำลังเชื่อมต่อ...'
             },
             async fetchInfo() {
                 try {
@@ -102,7 +107,7 @@
                     this.info = response.data;
                 } catch (error) {
                     console.error('System info error', error);
-                    this.info.status = 'Offline';
+                    this.info.status = 'ออฟไลน์';
                 }
             },
             init() {
